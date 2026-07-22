@@ -227,6 +227,19 @@ Score (0–100) is a weighted blend of six components: **income level (25%)**, *
 
 The lender's `decide()` rule turns the score into **approve / counter‑offer / auto‑decline**, honouring the workspace's max amount and auto‑decline threshold.
 
+### Decision rules
+
+Money is integer kobo; the score's **recommended limit** (naira) is the model's safe ceiling for the borrower. Let `cap = min(recommended limit, lender product max)` and `offer = min(requested, cap)`.
+
+- **Auto‑decline** if any of:
+  - band is **E**, or
+  - score is **below the auto‑decline threshold** (default **40**, configurable per workspace in Settings → Lending rules), or
+  - **zero capacity** — the recommended limit (and therefore `offer`) is ≤ 0.
+- **Band D is not hard‑declined** — it flows through the normal offer logic but is naturally constrained by its (low) recommended limit. A small request that fits under the limit is approved; a larger one is countered down.
+- Otherwise: **approved** for the full amount when `offer ≥ requested`, else a **counter‑offer** of `offer` (the capped amount).
+
+The recommended limit is informational to the borrower (shown as an _estimate_); the lender always has final say and can reject with a reason.
+
 ---
 
 ## Testing
