@@ -2,9 +2,9 @@
 
 > **Your bank statement is your credit score.**
 
-Kova turns raw bank/wallet statements into an **explainable credit score** and wraps it in a complete **lend‑and‑collect loop** — score → estimate → apply → disburse → repay — powered by Monnify. Built for the **API Conference Lagos 2026 × Monnify Developer Challenge** (Monnify **sandbox** only).
+Kova brings trust to informal lending. It turns a borrower's bank and wallet statements into a clear credit score, then gives the lender a safe way to score, offer, disburse, and collect repayment through Monnify. Built for the **API Conference Lagos 2026 × Monnify Developer Challenge** (Monnify **sandbox** only).
 
-150M+ Nigerians are locked out of credit because they have no credit history — yet they receive money and pay bills every month. Kova reads that history (statements they can already download), aggregates it across banks, nets out internal transfers, and returns a **score, band, confidence, recommended limit and human‑readable reasons**. A lender then verifies identity, disburses via Monnify, and collects repayment via a Monnify checkout link.
+Most lending in Nigeria happens informally, between family, friends, cooperatives, and small lenders who have no reliable way to judge whether someone can pay back. The decision usually comes down to gut feeling, so good borrowers get turned away and lenders lose money on bad ones. Kova reads the statements a borrower can already download, aggregates them across banks, nets out internal transfers, and returns a **score, band, confidence, recommended limit and plain reasons** a lender can actually read. The lender then verifies identity, disburses via Monnify, and collects repayment through a Monnify checkout link. It works for informal lenders first, and formal lenders can use the same flow.
 
 ---
 
