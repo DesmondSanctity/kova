@@ -5,11 +5,12 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-# go-fitz uses purego (no cgo); a static binary keeps the image tiny.
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /kova ./cmd/server
+# go-fitz needs MuPDF: with cgo it links the bundled static MuPDF into the binary
+# (no runtime libmupdf.so). -buildmode=pie satisfies the Unikraft elfloader.
+RUN CGO_ENABLED=1 GOOS=linux go build -buildmode=pie -trimpath -ldflags="-s -w" -o /kova ./cmd/server
 
 FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates libstdc++6 \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=build /kova /usr/local/bin/kova
 EXPOSE 8080

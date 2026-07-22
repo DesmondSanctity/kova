@@ -5,4 +5,4 @@ pages_build_output_dir = "dist"
 # Point this at your deployed Unikraft backend. Override per-environment in the
 # Cloudflare dashboard (Settings → Variables) if you prefer not to commit it.
 [vars]
-API_BASE = "https://REPLACE-WITH-YOUR-UNIKRAFT-BACKEND"
+API_BASE = "https://polished-tree-xcfypb6c.fra.unikraft.app"
