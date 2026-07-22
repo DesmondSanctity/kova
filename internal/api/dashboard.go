@@ -163,7 +163,7 @@ func (s *Server) handleGitHubStart(w http.ResponseWriter, r *http.Request) {
 	}
 	q := url.Values{
 		"client_id":    {s.github.clientID},
-		"redirect_uri": {origin(r) + "/auth/github/callback"},
+		"redirect_uri": {s.oauthBase(r) + "/auth/github/callback"},
 		"scope":        {"read:user user:email"},
 	}
 	http.Redirect(w, r, "https://github.com/login/oauth/authorize?"+q.Encode(), http.StatusFound)
@@ -175,7 +175,7 @@ func (s *Server) handleGitHubCallback(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, s.appURL("/login?error=github"), http.StatusFound)
 		return
 	}
-	tok, err := s.exchangeGitHubCode(code, origin(r))
+	tok, err := s.exchangeGitHubCode(code, s.oauthBase(r))
 	if err != nil {
 		http.Redirect(w, r, s.appURL("/login?error=github"), http.StatusFound)
 		return

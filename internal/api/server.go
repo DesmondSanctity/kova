@@ -834,6 +834,17 @@ func (s *Server) appURL(path string) string {
 	return s.baseURL + path
 }
 
+// oauthBase returns the canonical external origin used for OAuth redirect URIs:
+// the configured app base URL (KOVA_BASE_URL) when set, else the request origin.
+// This keeps the GitHub redirect_uri stable regardless of which host (backend or
+// the proxying frontend) served the request.
+func (s *Server) oauthBase(r *http.Request) string {
+	if s.baseURL != "" {
+		return strings.TrimRight(s.baseURL, "/")
+	}
+	return origin(r)
+}
+
 func (s *Server) servePage(w http.ResponseWriter, name, id string) {
 	page, err := staticFS.ReadFile("static/" + name)
 	if err != nil {
