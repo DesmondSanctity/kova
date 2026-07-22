@@ -1,0 +1,45 @@
+---
+interface Props {
+  title?: string;
+  description?: string;
+}
+const {
+  title = 'Kova: the credit layer for the credit-invisible',
+  description = 'Turn bank and wallet statements into an explainable credit score. Share a secure link, score instantly, and lend from your dashboard. No credit bureau required.',
+} = Astro.props;
+import '../styles/global.css';
+import ThemeToggle from '../components/ThemeToggle.svelte';
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline>
+      (function () {
+        try {
+          var t = localStorage.getItem('kova-theme');
+          if (t) document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {}
+      })();
+    </script>
+    <meta name="description" content={description} />
+    <title>{title}</title>
+    <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+    <link
+      href="https://api.fontshare.com/v2/css?f[]=general-sans@300,400,500,600&f[]=satoshi@300,400,500,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="min-h-screen bg-bg text-fg antialiased">
+    <slot />
+    <ThemeToggle client:load />
+  </body>
+</html>

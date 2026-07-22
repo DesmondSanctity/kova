@@ -1,0 +1,9 @@
+---
+import AuthShell from '../layouts/AuthShell.astro';
+import AuthForm from '../components/AuthForm.svelte';
+---
+
+<AuthShell heading="Welcome back" sub="Sign in to your Kova dashboard.">
+  <AuthForm mode="login" client:load />
+  <Fragment slot="footer">New to Kova? <a href="/signup" class="font-medium text-fg underline underline-offset-2">Sign up</a></Fragment>
+</AuthShell>

@@ -1,0 +1,66 @@
+Statement
+Kuda MF Bank (RC796975). All rights reserved. All deposits are insured by the Nigerian Deposit Insurance Corporation (NDIC). Kuda MF Bank is
+licensed by the Central Bank of Nigeria. “Kuda” and “Kudabank” are trademarks of Kuda Technologies LTD. 1-11 Commercial avenue, Yaba,
+Lagos. Nigeria. 131 Finsbury Pavement, London, EC2A 1NT, UK.
+Page 1 of 2 Account Number : 2000682152
+UGOCHUKWU DESMOND OBISI
+88 COMMUNITY ROAD, AKOKA, SHOMOLU, LAGOS
+Account
+2000682152
+Date
+01/04/2026 - 01/07/2026
+Opening Balance
+₦12.44
+Closing Balance
+₦1,000.00
+Summary
+Money In Money Out
+₦207,820.00 ₦206,832.44
+Date/Time Money In Money Out Money Out To / From Description Balance
+28/05/26 14:05:51 ₦136,820.00 inward transfer
+Gfs/Khalid Yahya Muhammad/0118528410/Aella Mfb
+on behalf of desmond ugochukwu ₦136,832.44
+28/05/26 14:06:40 ₦50.00 outward transfer Cbn//Moniepoint
+stamp duty on electronic funds transfer - 2000682152
+₦119,782.44
+28/05/26 14:06:40 ₦17,000.00 outward transfer
+Adebayo Olugbenga Odeyinde/8033042159/Moniepoint transfer ₦119,832.44
+28/05/26 18:03:53 ₦10,700.00 outward transfer
+Jesunifemi Joshua Jeremiah/8027027894/Opay Digital Services Limited
+indrive ₦109,082.44
+28/05/26 18:03:53 ₦50.00 outward transfer Cbn//Opay Digital Services Limited
+stamp duty on electronic funds transfer - 2000682152
+₦109,032.44
+28/05/26 20:21:24 ₦4,000.00 outward transfer
+Thomas Ojo Oladele/8034842440/Opay Digital Services Limited
+indrive ₦105,032.44
+28/05/26 22:11:20 ₦70,000.00 inward transfer
+Amarachi Agbanajelu/0240771191/Wema Bank
+alat nip transfer to ugochukwu desmond obisi from amarachi agbanajelu - loan
+₦175,032.44
+28/05/26 22:12:11 ₦162,250.00 outward transfer
+Stories Villa Limited - Stories Villa Limited/5981519544/Moniepoint stories lagos ₦12,782.44
+28/05/26 22:12:11 ₦50.00
+outward transfer Cbn//Moniepoint
+stamp duty on electronic funds ₦12,732.44
+
+Statement
+Kuda MF Bank (RC796975). All rights reserved. All deposits are insured by the Nigerian Deposit Insurance Corporation (NDIC). Kuda MF Bank is
+licensed by the Central Bank of Nigeria. “Kuda” and “Kudabank” are trademarks of Kuda Technologies LTD. 1-11 Commercial avenue, Yaba,
+Lagos. Nigeria. 131 Finsbury Pavement, London, EC2A 1NT, UK.
+Page 2 of 2 Account Number : 2000682152
+transfer - 2000682152
+28/05/26 23:03:35 ₦50.00 outward transfer Cbn//Opay Digital Services Limited
+stamp duty on electronic funds transfer - 2000682152
+₦1,182.44
+28/05/26 23:03:35 ₦11,500.00 outward transfer
+Fexco Logistics And Fleets Services /8035366810/Opay Digital Services Limited
+indrive ₦1,232.44
+22/06/26 20:58:52 ₦1,182.44 outward transfer
+Desmond Ugochukwu Obisi/9059391242/Opay Digital Services Limited
+transfer ₦0.00
+01/07/26 09:03:25 ₦1,000.00 inward transfer
+Ugochukwu Desmond Obisi/2408981673/Nibss Instant Payment (Nip)
+ugochukwu desmond obisi testing via owo -e5d4b3070df5431a8f9a
+₦1,000.00
+

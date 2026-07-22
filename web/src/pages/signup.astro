@@ -1,0 +1,9 @@
+---
+import AuthShell from '../layouts/AuthShell.astro';
+import AuthForm from '../components/AuthForm.svelte';
+---
+
+<AuthShell heading="Create your account" sub="Start scoring borrowers in minutes.">
+  <AuthForm mode="signup" client:load />
+  <Fragment slot="footer">Have an account? <a href="/login" class="font-medium text-fg underline underline-offset-2">Sign in</a></Fragment>
+</AuthShell>

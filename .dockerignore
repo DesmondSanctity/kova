@@ -1,0 +1,8 @@
+.git
+bin
+*.pdf
+node_modules
+sdk/node_modules
+sdk/dist
+*.out
+.DS_Store

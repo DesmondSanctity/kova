@@ -1,0 +1,28 @@
+---
+import Base from '../layouts/Base.astro';
+import Onboarding from '../components/Onboarding.svelte';
+---
+
+<Base title="Set up your workspace · Kova">
+  <div class="relative min-h-screen overflow-hidden">
+    <div
+      class="pointer-events-none absolute inset-0 opacity-40"
+      style="background-image:linear-gradient(to right,rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.04) 1px,transparent 1px);background-size:52px 52px;mask-image:radial-gradient(80% 55% at 50% 0%,#000,transparent 72%)"
+    >
+    </div>
+    <div class="relative mx-auto flex min-h-screen max-w-[560px] flex-col justify-center px-6 py-16">
+      <a href="/" class="flex items-center gap-2.5">
+        <span class="grid h-7 w-7 place-items-center rounded-md bg-fg text-[14px] font-extrabold text-bg">K</span>
+        <span class="text-[17px] font-semibold tracking-tight">Kova</span>
+      </a>
+      <div class="mt-9">
+        <p class="font-mono text-[11px] uppercase tracking-wider text-violet">Welcome to Kova</p>
+        <h1 class="mt-2.5 text-[30px] font-light tracking-tight text-fg" style="font-family:var(--font-display)">Set up your workspace</h1>
+        <p class="mt-2 max-w-[46ch] text-[15px] leading-relaxed text-muted">A workspace holds your keys, links and usage. You can rename it anytime.</p>
+      </div>
+      <div class="mt-7 rounded-2xl border border-line bg-surface/50 p-7">
+        <Onboarding client:load />
+      </div>
+    </div>
+  </div>
+</Base>

@@ -1,0 +1,47 @@
+# Kraftfile — deploy the Kova Go backend as a Unikraft unikernel.
+
+#
+
+# The static `kova` binary (built by ./Dockerfile, CGO disabled) runs on the
+
+# Unikraft `base` runtime in binary-compatibility mode. Build/deploy with KraftKit:
+
+#
+
+# kraft cloud deploy \
+
+# -p 443:8080 \
+
+# -e KOVA_ADDR=:8080 \
+
+# -e KOVA_BASE_URL=https://<your-cloudflare-pages-domain> \
+
+# -e DATABASE_URL=postgres://user:pass@host/db?sslmode=require \
+
+# -e MONNIFY_BASE_URL=https://sandbox.monnify.com \
+
+# -e MONNIFY_API_KEY=... -e MONNIFY_SECRET_KEY=... \
+
+# -e MONNIFY_CONTRACT_CODE=... -e MONNIFY_WALLET_ACCOUNT=... \
+
+# -e RESEND_API_KEY=... -e EMAIL_FROM="Kova <no-reply@your-domain>" \
+
+# .
+
+#
+
+# Notes:
+
+# - Unikraft is stateless: point DATABASE_URL at a managed Postgres (Neon, Supabase, etc.).
+
+# - Port 8080 (KOVA_ADDR) is the app; -p 443:8080 gives you TLS on the public URL.
+
+spec: v0.6
+
+name: kova
+
+runtime: base:latest
+
+rootfs: ./Dockerfile
+
+cmd: ["/usr/local/bin/kova"]

@@ -1,0 +1,379 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import BankMarquee from '../components/BankMarquee.svelte';
+import PixelGrid from '../components/PixelGrid.svelte';
+
+const steps = [
+  {
+    n: '01',
+    t: 'Collect statements',
+    d: 'Borrowers upload their bank and wallet statements through a secure link you share.',
+  },
+  {
+    n: '02',
+    t: 'Read and normalize',
+    d: 'Kova reads every transaction, nets internal transfers, and builds a clean cashflow view.',
+  },
+  {
+    n: '03',
+    t: 'Score and decide',
+    d: 'You get an explainable score from 0 to 100, plus a band, a limit, and clear reasons.',
+  },
+];
+---
+
+<Base>
+  <Nav />
+
+  <!-- HERO -->
+  <section class="relative overflow-hidden">
+    <div class="relative mx-auto grid max-w-[1240px] items-center gap-x-14 gap-y-12 px-6 py-20 md:grid-cols-[1.05fr_0.95fr] md:py-28">
+      <div>
+        <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-[13px] text-muted">
+          <span class="h-1.5 w-1.5 rounded-full bg-accent"></span>
+          Works with every Nigerian bank &amp; wallet
+        </div>
+
+        <h1 class="h-display max-w-[19ch]">
+          The credit layer for <br class="hidden sm:block" />the <span class="whitespace-nowrap bg-gradient-to-r from-violet to-accent bg-clip-text text-transparent">credit-invisible.</span>
+        </h1>
+
+        <p class="lead mt-8 max-w-[48ch]">
+          Turn bank and wallet statements into an explainable credit score. Share a
+          secure link, score instantly, and lend — all from your dashboard. No credit
+          bureau required.
+        </p>
+
+        <div class="mt-9 flex flex-wrap items-center gap-3">
+          <a href="/signup" class="inline-flex items-center gap-3 bg-fg px-7 py-4 text-[17px] font-medium text-bg transition-opacity hover:opacity-90">Start for free <span class="opacity-50">›</span></a>
+          <a href="/docs" class="inline-flex items-center px-5 py-4 text-[17px] font-medium text-muted transition-colors hover:text-fg">Read the docs</a>
+        </div>
+
+        <p class="mt-5 text-[13px] text-faint">Free during pilot · No card required</p>
+      </div>
+
+      <!-- hero visual: score pipeline panel -->
+      <div class="relative">
+        <div class="relative z-10 overflow-hidden rounded-2xl border-[1.5px] border-line bg-surface shadow-2xl">
+          <div class="flex items-center gap-2 border-b border-line px-4 py-3">
+            <span class="h-3 w-3 rounded-full bg-line"></span>
+            <span class="h-3 w-3 rounded-full bg-line"></span>
+            <span class="h-3 w-3 rounded-full bg-line"></span>
+            <span class="ml-3 font-mono text-[12px] text-faint">app.kova.dev/score</span>
+          </div>
+          <div class="p-6">
+            <div class="text-eyebrow">Statements parsed</div>
+            <div class="mt-3 grid grid-cols-3 gap-2">
+              {[
+                ['OPay', '132 txns'],
+                ['Access', '96 txns'],
+                ['GTBank', '61 txns'],
+              ].map(([b, n]) => (
+                <div class="rounded-xl border border-line bg-bg/40 p-3">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[13px] font-medium text-fg">{b}</span>
+                    <span class="grid h-4 w-4 place-items-center rounded-full bg-accent/20 text-[10px] text-accent">✓</span>
+                  </div>
+                  <div class="mt-2 flex h-6 items-end gap-0.5">
+                    {[40, 65, 30, 80, 55, 70, 45].map((h) => (
+                      <span class="spark flex-1 rounded-sm bg-violet/40" style={`height:${h}%`}></span>
+                    ))}
+                  </div>
+                  <div class="mt-1.5 text-[11px] text-faint">{n}</div>
+                </div>
+              ))}
+            </div>
+            <div class="mt-4 rounded-xl border border-line bg-bg/40 p-5">
+              <div class="flex items-end justify-between">
+                <div>
+                  <div class="text-eyebrow">Credit score</div>
+                  <div class="mt-1 flex items-baseline gap-2">
+                    <span id="heroScore" class="text-[52px] font-light leading-none tracking-tight">0</span>
+                    <span class="rounded-md bg-accent/15 px-2 py-0.5 text-[13px] font-semibold text-accent">Band B</span>
+                  </div>
+                </div>
+                <div class="text-right text-[13px] text-muted">
+                  <div>Confidence <span class="text-fg">63%</span></div>
+                  <div>Limit <span class="text-fg">₦40,000</span></div>
+                </div>
+              </div>
+              <div class="mt-4 h-2 w-full overflow-hidden rounded-full bg-bg">
+                <div id="heroBar" class="h-full w-0 rounded-full bg-gradient-to-r from-violet to-accent transition-[width] duration-[1200ms] ease-out"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- USED BY -->
+  <section class="border-y border-line/60 bg-surface/30">
+    <div class="mx-auto max-w-[1240px] px-6 py-14">
+      <p class="text-eyebrow text-center">Used by lenders and fintechs across Nigeria</p>
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-x-12 gap-y-5 opacity-70">
+        {['Carbon', 'FairMoney', 'Renmoney', 'Branch', 'Aella', 'Lendigo', 'PalmPay Credit'].map((name) => (
+          <span class="text-[19px] font-semibold tracking-tight text-muted">{name}</span>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how" class="mx-auto max-w-[1240px] px-6 py-24">
+    <div class="max-w-[42ch]">
+      <p class="text-eyebrow">How it works</p>
+      <h2 class="h-section mt-4">From statement to score in three steps.</h2>
+    </div>
+    <div class="mt-14 grid items-start gap-x-8 gap-y-12 md:grid-cols-3">
+      {steps.map((s, i) => (
+        <div>
+          <div class="grid h-8 w-8 place-items-center bg-violet text-[16px] font-semibold text-bg">{i + 1}</div>
+          <h3 class="mt-5 text-[20px] font-medium tracking-tight text-fg">{s.t}</h3>
+          <p class="mt-3 min-h-[3.5rem] text-[15px] leading-relaxed text-muted">{s.d}</p>
+
+          {i === 0 && (
+            <div class="mt-7 flex h-[236px] flex-col overflow-hidden rounded-xl border border-line bg-surface">
+              <div class="border-b border-line px-3.5 py-2.5 font-mono text-[11px] text-faint">upload</div>
+              <div class="flex flex-1 flex-col gap-2.5 p-3.5">
+                <div class="flex flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-line">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="text-faint"><path d="M12 16V4M8 8l4-4 4 4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round"/></svg>
+                  <span class="text-[12px] text-muted">Drop statement.pdf</span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  <span class="rounded-md bg-accent/10 px-2 py-1 font-mono text-[11px] text-accent">OPay ✓</span>
+                  <span class="rounded-md bg-accent/10 px-2 py-1 font-mono text-[11px] text-accent">Access ✓</span>
+                  <span class="rounded-md bg-bg/60 px-2 py-1 font-mono text-[11px] text-faint">+ add bank</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {i === 1 && (
+            <div class="mt-7 flex h-[236px] flex-col overflow-hidden rounded-xl border border-line bg-surface">
+              <div class="border-b border-line px-3.5 py-2.5 font-mono text-[11px] text-faint">parse</div>
+              <div class="flex flex-1 flex-col gap-2.5 p-3.5 font-mono text-[12px]">
+                <div class="flex items-center justify-between"><span class="text-faint">Transactions</span><span class="rounded bg-bg/60 px-2 py-0.5 text-muted">289</span></div>
+                <div class="flex items-center justify-between"><span class="text-faint">Income sources</span><span class="rounded bg-bg/60 px-2 py-0.5 text-muted">7</span></div>
+                <div class="flex items-center justify-between"><span class="text-faint">Period</span><span class="rounded bg-bg/60 px-2 py-0.5 text-muted">3 months</span></div>
+                <div class="mt-auto rounded-md bg-bg/60 p-2.5 text-[11px] leading-relaxed text-muted">
+                  <div>› parsing transactions…</div>
+                  <div>› netting internal transfers…</div>
+                  <div class="text-accent">✓ normalized</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {i === 2 && (
+            <div class="mt-7 flex h-[236px] flex-col overflow-hidden rounded-xl border border-line bg-surface">
+              <div class="border-b border-line px-3.5 py-2.5 font-mono text-[11px] text-faint">result</div>
+              <div class="flex flex-1 flex-col gap-3 p-3.5">
+                <div class="flex items-baseline gap-2">
+                  <span class="text-[36px] font-light leading-none text-fg">73</span>
+                  <span class="rounded-md bg-accent/15 px-2 py-0.5 text-[12px] font-semibold text-accent">Band B</span>
+                </div>
+                <div class="h-1.5 w-full overflow-hidden rounded-full bg-bg"><div class="h-full w-[73%] rounded-full bg-gradient-to-r from-violet to-accent"></div></div>
+                <div class="mt-auto space-y-1.5 font-mono text-[12px] text-muted">
+                  <div><span class="text-accent">✓</span> Steady monthly inflow</div>
+                  <div><span class="text-accent">✓</span> 7 distinct sources</div>
+                  <div><span class="text-accent">✓</span> Low fee burden</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- FEATURES — bento, Render "zero ops" style -->
+  <section id="product" class="border-t border-line/60">
+    <div class="mx-auto max-w-[1240px] px-6 py-24">
+      <h2 class="h-section max-w-[16ch]">
+        Score any borrower with <span class="text-violet">zero setup</span>
+      </h2>
+
+      <div class="mt-12 overflow-hidden rounded-2xl border border-line">
+        <div class="grid md:grid-cols-2">
+          <!-- A: colored service list -->
+          <div class="border-b border-line p-8 md:border-r lg:p-10">
+            <p class="text-[22px] font-light leading-snug tracking-tight text-fg lg:text-[26px]">
+              Read income, cashflow &amp; risk from
+              <span class="text-accent">salary inflows</span>,
+              <span class="text-violet">bank transfers</span>,
+              <span>airtime &amp; data</span>,
+              <span style="color:#e0b978">bills &amp; utilities</span>,
+              <span style="color:#ef6b6b">POS &amp; merchant</span>,
+              <span class="text-violet">loan repayments</span>,
+              <span style="color:#4dd0b1">wallet top-ups</span>,
+              <span class="text-muted">fees &amp; charges</span>.
+            </p>
+          </div>
+
+          <!-- B: shareable link pipeline -->
+          <div class="border-b border-line p-8 lg:p-10">
+            <h3 class="text-[21px] font-medium tracking-tight text-fg">Shareable lender links</h3>
+            <p class="mt-2 max-w-[40ch] text-[14px] leading-relaxed text-muted">
+              Send a borrower a link. They upload, Kova scores, and you get the result back. No integration required.
+            </p>
+            <a href="/docs" class="mt-3 inline-block font-mono text-[12px] text-violet">Link docs →</a>
+            <div class="mt-6 flex items-center gap-3">
+              <div class="flex-1 rounded-xl border border-line bg-bg/40 p-3 font-mono text-[11px]">
+                <div class="text-faint">REQUEST #128</div>
+                <div class="mt-2 flex items-center gap-1.5 text-muted"><span class="text-accent">✓</span> Statement uploaded</div>
+                <div class="mt-1 flex items-center gap-1.5 text-muted"><span class="text-accent">✓</span> Checks passed</div>
+              </div>
+              <span class="text-faint">→</span>
+              <div class="flex-1 rounded-xl border border-line bg-bg/40 p-3 font-mono text-[11px]">
+                <div class="text-faint">SCORE</div>
+                <div class="mt-2 flex items-center justify-between text-muted"><span>Parsed</span><span class="text-accent">✓</span></div>
+                <div class="mt-1 flex items-center justify-between text-muted"><span>Identity</span><span class="text-accent">✓</span></div>
+                <div class="mt-1 flex items-center justify-between text-muted"><span>73 · Band B</span><span class="text-accent">✓</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- C: explainable scores + chart -->
+          <div class="border-b border-line p-8 md:border-r lg:p-10">
+            <h3 class="text-[21px] font-medium tracking-tight text-fg">Explainable scores lenders trust</h3>
+            <p class="mt-2 max-w-[40ch] text-[14px] leading-relaxed text-muted">
+              Every score ships with the signals behind it: income stability, cashflow trend, distinct sources, and fee burden. No black box.
+            </p>
+            <a href="/docs" class="mt-3 inline-block font-mono text-[12px] text-violet">Scoring docs →</a>
+          </div>
+          <div class="relative border-b border-line p-8 lg:p-10">
+            <div class="font-mono text-[11px] text-faint">MONTHLY CASHFLOW · 6 MO</div>
+            <svg viewBox="0 0 320 120" class="mt-3 w-full" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#8b7cff" stop-opacity="0.35" />
+                  <stop offset="100%" stop-color="#8b7cff" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+              <path d="M0,90 L53,70 L106,80 L160,45 L213,55 L266,25 L320,35 L320,120 L0,120 Z" fill="url(#area)" />
+              <path d="M0,90 L53,70 L106,80 L160,45 L213,55 L266,25 L320,35" fill="none" stroke="#8b7cff" stroke-width="2" />
+            </svg>
+          </div>
+
+          <!-- E, F: SDK + keys -->
+          <div class="border-line p-8 md:border-r lg:p-10">
+            <div class="flex items-center gap-2.5">
+              <h3 class="text-[21px] font-medium tracking-tight text-fg">Drop-in SDK widget</h3>
+              <span class="rounded-full border border-violet/30 bg-violet/10 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-violet">Coming soon</span>
+            </div>
+            <p class="mt-2 max-w-[40ch] text-[14px] leading-relaxed text-muted">
+              One script tag adds a polished upload widget with a 40+ bank picker to your app in minutes.
+            </p>
+          </div>
+          <div class="p-8 lg:p-10">
+            <div class="flex items-center gap-2.5">
+              <h3 class="text-[21px] font-medium tracking-tight text-fg">Keys &amp; domain allowlisting</h3>
+              <span class="rounded-full border border-violet/30 bg-violet/10 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-violet">Coming soon</span>
+            </div>
+            <p class="mt-2 max-w-[40ch] text-[14px] leading-relaxed text-muted">
+              Publishable and secret keys per workspace, with domain and IP allowlists you control from the dashboard.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA — bank marquee, Render "View Templates" pattern -->
+  <section id="pricing" class="mx-auto max-w-[1240px] px-6 pb-28">
+    <div class="overflow-hidden rounded-3xl border border-line px-8 py-10 md:px-12 md:py-12" style="background:var(--cta-bg)">
+      <div class="grid items-center gap-10 md:grid-cols-[1fr_1.35fr]">
+        <div class="min-w-0">
+          <h2 class="font-light leading-[1.12] tracking-tight" style="font-family:var(--font-display);font-size:clamp(28px,3vw,38px)">Whatever the bank, Kova scores it.</h2>
+          <p class="mt-3 max-w-[38ch] text-[16px] leading-relaxed text-muted">
+            Across 40+ Nigerian banks and wallets — share a link, score, and lend from your dashboard.
+          </p>
+          <a href="/signup" class="mt-6 inline-flex items-center gap-3 whitespace-nowrap bg-fg px-7 py-3.5 text-[16px] font-medium text-bg transition-opacity hover:opacity-90">Get started free <span class="opacity-50">›</span></a>
+        </div>
+        <div class="min-w-0 overflow-hidden">
+          <BankMarquee client:visible />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-line">
+    <!-- grid box: matrix + link columns -->
+    <div class="relative overflow-hidden">
+      <div class="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center">
+        <div class="w-[1196px] max-w-full overflow-hidden opacity-70" style="mask-image:radial-gradient(52% 130% at 0% 100%,#000 26%,transparent 66%),radial-gradient(40% 120% at 100% 100%,#000 20%,transparent 64%);-webkit-mask-image:radial-gradient(52% 130% at 0% 100%,#000 26%,transparent 66%),radial-gradient(40% 120% at 100% 100%,#000 20%,transparent 64%)">
+          <PixelGrid cols={26} rows={10} width={1196} bias client:visible />
+        </div>
+      </div>
+      <div class="relative z-10 mx-auto max-w-[1240px] px-6 pt-20 pb-28">
+        <div class="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3 lg:grid-cols-6">
+          <div class="hidden lg:block lg:col-span-3"></div>
+          {[
+            ['Product', [['How it works', '#how'], ['Features', '#product'], ['Pricing', '#pricing']]],
+            ['Developers', [['Documentation', '/docs'], ['Dashboard', '/dashboard']]],
+            ['Account', [['Get started', '/signup'], ['Sign in', '/login']]],
+          ].map(([title, items]) => (
+            <div>
+              <h4 class="font-mono text-[11px] uppercase tracking-wider text-faint">{title}</h4>
+              <ul class="mt-4 space-y-2.5">
+                {(items as string[][]).map(([label, href]) => (
+                  <li><a href={href} class="text-[14px] text-muted transition-colors hover:text-fg">{label}</a></li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+    <!-- socials + copyright, below the grid box on clean background -->
+    <div class="border-t border-line/60">
+      <div class="mx-auto flex max-w-[1240px] flex-col items-center justify-between gap-3 px-6 py-6 text-[13px] text-faint sm:flex-row">
+        <span>© 2026 Kova · Built on Monnify</span>
+        <div class="flex items-center gap-6">
+          <a href="#" class="transition-colors hover:text-fg">X</a>
+          <a href="#" class="transition-colors hover:text-fg">LinkedIn</a>
+          <a href="#" class="transition-colors hover:text-fg">GitHub</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+</Base>
+
+<style>
+  .spark {
+    transform-origin: bottom;
+    animation: spark 1.8s ease-in-out infinite;
+  }
+  .spark:nth-child(2) { animation-delay: 0.12s; }
+  .spark:nth-child(3) { animation-delay: 0.24s; }
+  .spark:nth-child(4) { animation-delay: 0.36s; }
+  .spark:nth-child(5) { animation-delay: 0.48s; }
+  .spark:nth-child(6) { animation-delay: 0.6s; }
+  .spark:nth-child(7) { animation-delay: 0.72s; }
+  @keyframes spark {
+    0%, 100% { transform: scaleY(0.55); opacity: 0.7; }
+    50% { transform: scaleY(1); opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .spark { animation: none; }
+  }
+</style>
+
+<script>
+  const bar = document.getElementById('heroBar');
+  if (bar) requestAnimationFrame(() => { bar.style.width = '73%'; });
+
+  const score = document.getElementById('heroScore');
+  if (score) {
+    const target = 73, dur = 1200, t0 = performance.now();
+    const tick = (t: number) => {
+      const p = Math.min((t - t0) / dur, 1);
+      score.textContent = String(Math.round(p * p * (3 - 2 * p) * target));
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+</script>

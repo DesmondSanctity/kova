@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kova — assessment result</title>
+  <style>
+   :root {
+    --bg: #0a0a0b;
+    --panel: #111114;
+    --line: #1e1e22;
+    --ink: #f5f5f6;
+    --muted: #8b8b93;
+    --accent: #22c55e;
+   }
+   * {
+    box-sizing: border-box;
+   }
+   body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font:
+     15px/1.6 ui-sans-serif,
+     system-ui,
+     -apple-system,
+     'Segoe UI',
+     Roboto,
+     Helvetica,
+     Arial,
+     sans-serif;
+   }
+   header {
+    border-bottom: 1px solid var(--line);
+   }
+   .bar {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-weight: 600;
+   }
+   .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+   }
+   main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+   }
+   .card {
+    max-width: 520px;
+    width: 100%;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 26px;
+   }
+   .muted {
+    color: var(--muted);
+   }
+   .wait {
+    text-align: center;
+    padding: 30px 0;
+   }
+   .spinner {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 3px solid var(--line);
+    border-top-color: var(--ink);
+    margin: 0 auto 16px;
+    animation: spin 0.8s linear infinite;
+   }
+   @keyframes spin {
+    to {
+     transform: rotate(360deg);
+    }
+   }
+   .top {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+   }
+   .dial {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    flex: 0 0 auto;
+   }
+   .dial .num {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    font-weight: 700;
+   }
+   .dial .num span {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+   }
+   .meta div {
+    margin-bottom: 8px;
+   }
+   .meta span {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+   }
+   .meta b {
+    font-size: 17px;
+   }
+   ul {
+    list-style: none;
+    padding: 0;
+    margin: 18px 0 0;
+   }
+   li {
+    display: flex;
+    gap: 10px;
+    padding: 9px 0;
+    border-top: 1px solid var(--line);
+    font-size: 13px;
+   }
+   .pill {
+    width: 6px;
+    height: 18px;
+    border-radius: 6px;
+    flex: 0 0 auto;
+   }
+   footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    padding: 20px;
+   }
+  </style>
+ </head>
+ <body>
+  <header>
+   <div class="bar">
+    <span class="dot"></span> <span id="brand">Kova</span> · lender view
+   </div>
+  </header>
+  <main>
+   <div class="card" id="card">
+    <div class="wait">
+     <div class="spinner"></div>
+     <div class="muted">
+      Waiting for the borrower to upload their statements…
+     </div>
+    </div>
+   </div>
+  </main>
+  <footer>
+   This link shows only the score — never the borrower's raw statements.
+  </footer>
+
+  <script>
+   const ID = '__REQUEST_ID__';
+   const card = document.getElementById('card');
+   const BAND = {
+    A: '#22c55e',
+    B: '#38bdf8',
+    C: '#f59e0b',
+    D: '#fb923c',
+    E: '#ef4444',
+   };
+   const naira = (n) => '₦' + Math.round(n).toLocaleString('en-NG');
+
+   function render(rep) {
+    const s = rep.score,
+     f = s.features,
+     color = BAND[s.band] || '#8b8b93';
+    const c = 2 * Math.PI * 42;
+    const reasons = s.reasons
+     .slice(0, 5)
+     .map(
+      (r) =>
+       `<li><span class="pill" style="background:${r.impact === 'positive' ? '#22c55e' : '#ef4444'}"></span><span>${r.detail}</span></li>`,
+     )
+     .join('');
+    card.innerHTML = `
+        <div class="top">
+          <div class="dial">
+            <svg viewBox="0 0 100 100" width="120" height="120">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="#1e1e22" stroke-width="7"/>
+              <circle cx="50" cy="50" r="42" fill="none" stroke="${color}" stroke-width="7" stroke-linecap="round"
+                stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - s.score / 100)}" transform="rotate(-90 50 50)"/>
+            </svg>
+            <div class="num">${s.score}<span>band ${s.band}</span></div>
+          </div>
+          <div class="meta">
+            <div><span>Confidence</span><b>${Math.round(s.confidence * 100)}%</b></div>
+            <div><span>Recommended limit</span><b>${naira(s.limitRecommendation)}</b></div>
+            <div><span>Avg monthly inflow</span><b>${naira(f.avgMonthlyInflow)}</b></div>
+          </div>
+        </div>
+        <ul>${reasons}</ul>
+        <p class="muted" style="margin-top:14px;font-size:12px">Banks: ${(rep.banks || []).join(', ')}</p>`;
+   }
+
+   async function poll() {
+    try {
+     const res = await fetch(`${location.origin}/v1/requests/${ID}`);
+     const data = await res.json();
+     const b = data.brand || {};
+     if (b.color && /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(b.color)) {
+      document.documentElement.style.setProperty('--accent', b.color);
+     }
+     if (b.name) document.getElementById('brand').textContent = b.name;
+     if (data.status === 'completed' && data.report) {
+      render(data.report);
+      return;
+     }
+    } catch {}
+    setTimeout(poll, 3000);
+   }
+   poll();
+  </script>
+ </body>
+</html>
