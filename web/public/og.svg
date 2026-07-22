@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="mark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8b7cff" />
+      <stop offset="1" stop-color="#22c55e" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8b7cff" />
+      <stop offset="1" stop-color="#22c55e" />
+    </linearGradient>
+    <radialGradient id="glow" cx="18%" cy="0%" r="90%">
+      <stop offset="0" stop-color="#241748" />
+      <stop offset="60%" stop-color="#0c0b12" />
+      <stop offset="100%" stop-color="#08080a" />
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="#08080a" />
+  <rect width="1200" height="630" fill="url(#glow)" />
+  <rect x="0" y="0" width="1200" height="6" fill="url(#accent)" />
+
+  <!-- Logomark -->
+  <g transform="translate(80,74)">
+    <rect width="96" height="96" rx="22" fill="url(#mark)" />
+    <g transform="translate(-16,-16)" fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="46" y1="32" x2="46" y2="96" />
+      <line x1="46" y1="65" x2="86" y2="32" />
+      <line x1="60" y1="59" x2="88" y2="96" />
+    </g>
+  </g>
+  <text x="196" y="140" font-family="Arial, Helvetica, sans-serif" font-size="46" font-weight="700" fill="#f6f6f7" letter-spacing="-1">Kova</text>
+
+  <!-- Headline -->
+  <text x="80" y="320" font-family="Arial, Helvetica, sans-serif" font-size="86" font-weight="700" fill="#f6f6f7" letter-spacing="-3">The credit layer for the</text>
+  <text x="80" y="424" font-family="Arial, Helvetica, sans-serif" font-size="86" font-weight="700" fill="url(#accent)" letter-spacing="-3">credit-invisible.</text>
+
+  <!-- Sub -->
+  <text x="82" y="500" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="400" fill="#9a9aa4">Turn any bank statement into an explainable credit score — then lend and collect.</text>
+
+  <!-- Footer -->
+  <text x="82" y="576" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="500" fill="#6b6b74">usekova.pages.dev</text>
+</svg>

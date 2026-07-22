@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /onboarding
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot
+
+Sitemap: https://usekova.pages.dev/sitemap.xml

@@ -67,7 +67,7 @@ Two surfaces sit on top of the same engine:
 From the repo root (`kova/`):
 
 ```bash
-# 1. Config — sandbox Monnify keys are already filled in
+# 1. Config — set DATABASE_URL and KOVA_SECRET_ENC_KEY (Monnify keys are entered in-app, not here)
 cp .env.example .env
 
 # 2. Start Postgres (Docker, mapped to host :5433) and the Go API on :8080
@@ -102,7 +102,7 @@ Everything a judge needs to exercise the product, end to end.
 ### 1. Sign up & onboard
 
 - Go to <http://localhost:4322>, click **Get started**. Sign up with **email + password** (or **Continue with GitHub** if you set the OAuth env vars).
-- Onboarding asks for your **organisation name** and **use case**, then drops you on the dashboard.
+- Onboarding is two steps: (1) your **organisation name** and **use case**, then (2) **connect your Monnify account** — paste your **API key**, **secret key**, **contract code** and **10‑digit wallet account**. Each lender disburses and collects on their **own** Monnify account; the secret key is encrypted at rest (AES‑256‑GCM) and never returned to the browser. Sandbox test keys work out of the box (the onboarding screen links to where to find them). You can update these any time in **Settings → Payments**.
 
 ### 2. Overview
 
@@ -142,6 +142,7 @@ Everything a judge needs to exercise the product, end to end.
   - **Branding**: organisation/brand name, **accent colour** and **button text colour** (with a live preview) that themes the borrower/repay pages.
   - **Loan products**: max amount, interest %, tenor days.
   - **Lending rules**: auto‑decline score threshold (default 40).
+  - **Payments**: your Monnify **API key, secret, contract code and wallet account** (secret is encrypted at rest; update any time).
   - **Support email**: where lender notifications go (falls back to your account email).
 
 ### 8. Emails (optional)
@@ -152,7 +153,7 @@ Set `RESEND_API_KEY` + a verified `EMAIL_FROM` to send: score/estimate, decline�
 
 ## Monnify sandbox notes
 
-- **Credentials**: the public sandbox test keys are pre‑filled in `.env.example`. Set `MONNIFY_WALLET_ACCOUNT` to your sandbox wallet source account to disburse.
+- **Per‑lender credentials**: each workspace connects its **own** Monnify account during onboarding (or **Settings → Payments**) — API key, secret key, contract code and wallet account. The secret is encrypted at rest with `KOVA_SECRET_ENC_KEY`. There are no global `MONNIFY_*` env vars; the public sandbox test keys can be pasted in for the demo.
 - **Disbursement is 2‑step (MFA on by default):** `single` transfer → `PENDING_AUTHORIZATION` + emailed OTP → `validate-otp`. Kova handles the OTP prompt + resend in the dashboard.
 - **Collections (repayment):** an init transaction returns a `checkoutUrl`; Kova verifies with the Query API using a deterministic `kova_repay_{id}` reference. Sandbox rarely fires the browser redirect, so Kova always verifies server‑side (via the "Check payment" button and the Monnify webhook at `/webhooks/monnify`).
 
@@ -167,13 +168,12 @@ Copy `.env.example` → `.env`. Sandbox defaults work out of the box.
 | `DATABASE_URL`                                        | Postgres DSN (default points at the compose DB on `:5433`)                          |
 | `KOVA_ADDR`                                           | API listen address (default `:8080`)                                                |
 | `KOVA_BASE_URL`                                       | Public origin of the dashboard (`http://localhost:4322`) — used for links/redirects |
-| `MONNIFY_BASE_URL`                                    | `https://sandbox.monnify.com`                                                       |
-| `MONNIFY_API_KEY` / `MONNIFY_SECRET_KEY`              | Monnify sandbox auth                                                                |
-| `MONNIFY_CONTRACT_CODE`                               | Monnify contract code                                                               |
-| `MONNIFY_WALLET_ACCOUNT`                              | Source wallet account funds are disbursed from                                      |
+| `KOVA_SECRET_ENC_KEY`                                 | Key used to encrypt each workspace's Monnify secret at rest (AES‑256‑GCM)           |
 | `KOVA_PUBLISHABLE_KEYS` / `KOVA_SECRET_KEYS`          | Optional API keys (comma‑separated) for the direct API                              |
 | `KOVA_GITHUB_CLIENT_ID` / `KOVA_GITHUB_CLIENT_SECRET` | Optional "Continue with GitHub"                                                     |
 | `RESEND_API_KEY` / `EMAIL_FROM`                       | Optional transactional email (Resend)                                               |
+
+> Monnify credentials are **not** environment variables — each lender connects their own account in‑app (onboarding / Settings → Payments).
 
 ---
 

@@ -12,6 +12,7 @@ const proxy = Object.fromEntries(
 
 // https://astro.build/config
 export default defineConfig({
+ site: 'https://usekova.pages.dev',
  integrations: [svelte()],
 
  vite: {
