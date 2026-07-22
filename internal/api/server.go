@@ -21,6 +21,7 @@ import (
 	"kova/internal/extract"
 	"kova/internal/monnify"
 	"kova/internal/pipeline"
+	"kova/internal/secretbox"
 	"kova/internal/store"
 )
 
@@ -32,7 +33,7 @@ var banksJSON []byte
 
 type Server struct {
 	extractor extract.Extractor
-	monnify   *monnify.Client
+	enc       *secretbox.Box
 	store     *store.Store
 	keyring   Keyring
 	github    githubOAuth
@@ -44,13 +45,13 @@ type Server struct {
 	maxBanks  int
 }
 
-func New(ex extract.Extractor, mon *monnify.Client, st *store.Store, gh GitHubConfig, mailer email.Sender) *Server {
+func New(ex extract.Extractor, st *store.Store, gh GitHubConfig, mailer email.Sender, enc *secretbox.Box) *Server {
 	if mailer == nil {
 		mailer = email.Noop{}
 	}
 	return &Server{
 		extractor: ex,
-		monnify:   mon,
+		enc:       enc,
 		store:     st,
 		keyring:   LoadKeyring(),
 		github:    githubOAuth{clientID: gh.ClientID, clientSecret: gh.ClientSecret},
@@ -61,6 +62,44 @@ func New(ex extract.Extractor, mon *monnify.Client, st *store.Store, gh GitHubCo
 		maxUpload: 25 << 20,
 		maxBanks:  3,
 	}
+}
+
+// errMonnifyNotConnected is returned when a workspace has no payment credentials.
+var errMonnifyNotConnected = fmt.Errorf("this workspace has not connected Monnify")
+
+// monnifyFor builds a Monnify client from a workspace's stored credentials.
+func (s *Server) monnifyForWorkspace(ws *store.Workspace) (*monnify.Client, error) {
+	if ws == nil || ws.MonnifySecretKeyEnc == "" {
+		return nil, errMonnifyNotConnected
+	}
+	apiKey, err := s.enc.Decrypt(ws.MonnifyAPIKeyEnc)
+	if err != nil {
+		return nil, err
+	}
+	secret, err := s.enc.Decrypt(ws.MonnifySecretKeyEnc)
+	if err != nil {
+		return nil, err
+	}
+	return monnify.NewWithCreds(ws.MonnifyBaseURL, apiKey, secret, ws.MonnifyContractCode, ws.MonnifyWalletAccount), nil
+}
+
+// monnifyFor resolves a workspace by id and builds its Monnify client.
+func (s *Server) monnifyFor(ctx context.Context, wsID string) (*monnify.Client, error) {
+	if wsID == "" {
+		return nil, errMonnifyNotConnected
+	}
+	ws, ok := s.store.WorkspaceByID(ctx, wsID)
+	if !ok {
+		return nil, errMonnifyNotConnected
+	}
+	return s.monnifyForWorkspace(ws)
+}
+
+// validateMonnify checks a set of credentials by requesting an auth token.
+func (s *Server) validateMonnify(ctx context.Context, base, apiKey, secret, contract, wallet string) error {
+	c := monnify.NewWithCreds(base, apiKey, secret, contract, wallet)
+	_, err := c.Token(ctx)
+	return err
 }
 
 // GitHubConfig carries GitHub OAuth credentials from the caller.
@@ -104,6 +143,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/me", s.handleMe)
 	mux.HandleFunc("POST /api/workspace", s.handleCreateWorkspace)
 	mux.HandleFunc("PATCH /api/workspace", s.handleUpdateWorkspace)
+	mux.HandleFunc("POST /api/workspace/monnify", s.handleUpdateMonnify)
 	mux.HandleFunc("POST /api/keys", s.handleCreateKey)
 	mux.HandleFunc("DELETE /api/keys/{id}", s.handleRevokeKey)
 	mux.HandleFunc("PATCH /api/keys/{id}/allowlist", s.handleKeyAllowlist)
@@ -174,10 +214,6 @@ func (s *Server) handleMonnifyWebhook(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "cannot read body")
 		return
 	}
-	if s.monnify == nil || !s.monnify.VerifyWebhook(body, r.Header.Get("monnify-signature")) {
-		writeErr(w, http.StatusUnauthorized, "invalid signature")
-		return
-	}
 	var evt struct {
 		EventType string `json:"eventType"`
 		EventData struct {
@@ -189,6 +225,27 @@ func (s *Server) handleMonnifyWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.Unmarshal(body, &evt); err != nil {
 		writeErr(w, http.StatusBadRequest, "invalid json")
+		return
+	}
+	// Resolve the owning workspace from the reference so we verify the HMAC with
+	// that lender's own Monnify secret.
+	ref := evt.EventData.PaymentReference
+	if ref == "" {
+		ref = evt.EventData.Reference
+	}
+	reqID := requestIDFromRef(ref)
+	if reqID == "" {
+		writeErr(w, http.StatusBadRequest, "unrecognized reference")
+		return
+	}
+	req, ok := s.store.RequestByID(r.Context(), reqID)
+	if !ok || req.WorkspaceID == "" {
+		writeErr(w, http.StatusNotFound, "request not found")
+		return
+	}
+	mon, err := s.monnifyFor(r.Context(), req.WorkspaceID)
+	if err != nil || !mon.VerifyWebhook(body, r.Header.Get("monnify-signature")) {
+		writeErr(w, http.StatusUnauthorized, "invalid signature")
 		return
 	}
 	// Collection (repayment) settled: mark the loan repaid.
@@ -353,8 +410,8 @@ func (s *Server) handleRequestAccept(w http.ResponseWriter, r *http.Request) {
 	// unverified. Live Monnify credentials make this a hard gate.
 	accountName := ""
 	verified := false
-	if s.monnify != nil {
-		if acc, err := s.monnify.VerifyAccount(r.Context(), body.AccountNumber, body.BankCode); err == nil {
+	if mon, err := s.monnifyFor(r.Context(), req.WorkspaceID); err == nil {
+		if acc, err := mon.VerifyAccount(r.Context(), body.AccountNumber, body.BankCode); err == nil {
 			accountName = acc.AccountName
 			verified = true
 		} else {
@@ -753,8 +810,10 @@ func (s *Server) scoreRequest(r *http.Request) (*pipeline.Report, int, error) {
 }
 
 func (s *Server) handleVerify(w http.ResponseWriter, r *http.Request) {
-	if s.monnify == nil {
-		writeErr(w, http.StatusServiceUnavailable, "monnify not configured")
+	auth, _ := keyAuthFrom(r.Context())
+	mon, err := s.monnifyFor(r.Context(), auth.WorkspaceID)
+	if err != nil {
+		writeErr(w, http.StatusServiceUnavailable, "monnify not connected for this workspace")
 		return
 	}
 	var req struct {
@@ -765,7 +824,7 @@ func (s *Server) handleVerify(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "invalid json")
 		return
 	}
-	acc, err := s.monnify.VerifyAccount(r.Context(), req.AccountNumber, req.BankCode)
+	acc, err := mon.VerifyAccount(r.Context(), req.AccountNumber, req.BankCode)
 	if err != nil {
 		writeErr(w, http.StatusBadGateway, err.Error())
 		return
@@ -774,8 +833,10 @@ func (s *Server) handleVerify(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleDisburse(w http.ResponseWriter, r *http.Request) {
-	if s.monnify == nil {
-		writeErr(w, http.StatusServiceUnavailable, "monnify not configured")
+	auth, _ := keyAuthFrom(r.Context())
+	mon, err := s.monnifyFor(r.Context(), auth.WorkspaceID)
+	if err != nil {
+		writeErr(w, http.StatusServiceUnavailable, "monnify not connected for this workspace")
 		return
 	}
 	var req struct {
@@ -791,7 +852,11 @@ func (s *Server) handleDisburse(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "invalid json")
 		return
 	}
-	d, err := s.monnify.Disburse(r.Context(), req.SourceAccount, req.Amount, req.Reference, req.Narration, req.BankCode, req.AccountNumber, req.AccountName)
+	source := req.SourceAccount
+	if source == "" {
+		source = mon.WalletAccount
+	}
+	d, err := mon.Disburse(r.Context(), source, req.Amount, req.Reference, req.Narration, req.BankCode, req.AccountNumber, req.AccountName)
 	if err != nil {
 		writeErr(w, http.StatusBadGateway, err.Error())
 		return
@@ -823,6 +888,22 @@ func origin(r *http.Request) string {
 		host = xfh
 	}
 	return scheme + "://" + host
+}
+
+// requestIDFromRef extracts the Kova request id from a Monnify reference:
+// repayment "kova_repay_{id}" or disbursement "kova_{id}_{unix}".
+func requestIDFromRef(ref string) string {
+	switch {
+	case strings.HasPrefix(ref, "kova_repay_"):
+		return strings.TrimPrefix(ref, "kova_repay_")
+	case strings.HasPrefix(ref, "kova_"):
+		rest := strings.TrimPrefix(ref, "kova_")
+		if i := strings.LastIndex(rest, "_"); i > 0 {
+			return rest[:i]
+		}
+		return rest
+	}
+	return ""
 }
 
 // appURL returns an absolute frontend URL for path when baseURL is configured,
@@ -892,13 +973,14 @@ func (s *Server) handleRepayPage(w http.ResponseWriter, r *http.Request) {
 // handleRepayInit starts a Monnify hosted-checkout for the outstanding repayment
 // and returns the checkout URL for the borrower to pay.
 func (s *Server) handleRepayInit(w http.ResponseWriter, r *http.Request) {
-	if s.monnify == nil {
-		writeErr(w, http.StatusServiceUnavailable, "payments not configured")
-		return
-	}
 	req, ok := s.store.RequestByID(r.Context(), r.PathValue("id"))
 	if !ok {
 		writeErr(w, http.StatusNotFound, "request not found")
+		return
+	}
+	mon, err := s.monnifyFor(r.Context(), req.WorkspaceID)
+	if err != nil {
+		writeErr(w, http.StatusServiceUnavailable, "payments not connected")
 		return
 	}
 	if !req.Disbursed {
@@ -923,7 +1005,7 @@ func (s *Server) handleRepayInit(w http.ResponseWriter, r *http.Request) {
 	}
 	ref := "kova_repay_" + req.ID
 	redirect := s.appURL("/pay/" + req.ID + "/done")
-	res, err := s.monnify.InitTransaction(r.Context(), float64(due)/100, name, email, ref, "Kova loan repayment", redirect)
+	res, err := mon.InitTransaction(r.Context(), float64(due)/100, name, email, ref, "Kova loan repayment", redirect)
 	if err != nil {
 		writeErr(w, http.StatusBadGateway, err.Error())
 		return
@@ -940,18 +1022,20 @@ func (s *Server) handleRepayDone(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	if s.monnify != nil && !req.Repaid {
-		if txn, err := s.monnify.VerifyTransaction(r.Context(), "kova_repay_"+id); err == nil {
-			due := req.RepaymentTotal
-			if due <= 0 {
-				due = req.OfferAmount
-			}
-			if strings.EqualFold(txn.PaymentStatus, "PAID") && int64(txn.AmountPaid*100) >= due {
-				if s.store.MarkRepaidByPayment(r.Context(), id) {
-					if req.WorkspaceID != "" {
-						s.store.RecordAudit(r.Context(), req.WorkspaceID, "borrower", "loan.repaid", id, "Paid via repayment link")
+	if !req.Repaid {
+		if mon, err := s.monnifyFor(r.Context(), req.WorkspaceID); err == nil {
+			if txn, err := mon.VerifyTransaction(r.Context(), "kova_repay_"+id); err == nil {
+				due := req.RepaymentTotal
+				if due <= 0 {
+					due = req.OfferAmount
+				}
+				if strings.EqualFold(txn.PaymentStatus, "PAID") && int64(txn.AmountPaid*100) >= due {
+					if s.store.MarkRepaidByPayment(r.Context(), id) {
+						if req.WorkspaceID != "" {
+							s.store.RecordAudit(r.Context(), req.WorkspaceID, "borrower", "loan.repaid", id, "Paid via repayment link")
+						}
+						s.finalizeRepayment(r.Context(), id)
 					}
-					s.finalizeRepayment(r.Context(), id)
 				}
 			}
 		}

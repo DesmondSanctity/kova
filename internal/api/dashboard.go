@@ -291,7 +291,18 @@ func (s *Server) handleCreateWorkspace(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusConflict, "workspace already exists")
 		return
 	}
-	var body struct{ Name, OrgName, UseCase string }
+	var body struct {
+		Name    string `json:"name"`
+		OrgName string `json:"orgName"`
+		UseCase string `json:"useCase"`
+		Monnify struct {
+			BaseURL       string `json:"baseUrl"`
+			APIKey        string `json:"apiKey"`
+			SecretKey     string `json:"secretKey"`
+			ContractCode  string `json:"contractCode"`
+			WalletAccount string `json:"walletAccount"`
+		} `json:"monnify"`
+	}
 	if err := decodeJSON(r, &body); err != nil {
 		writeErr(w, http.StatusBadRequest, "invalid json")
 		return
@@ -299,12 +310,88 @@ func (s *Server) handleCreateWorkspace(w http.ResponseWriter, r *http.Request) {
 	if strings.TrimSpace(body.Name) == "" {
 		body.Name = body.OrgName
 	}
-	ws, err := s.store.CreateWorkspace(r.Context(), u.ID, body.Name, body.OrgName, body.UseCase)
+	// Monnify credentials are required — every lender disburses on their own account.
+	m := body.Monnify
+	m.BaseURL = strings.TrimSpace(m.BaseURL)
+	if m.BaseURL == "" {
+		m.BaseURL = "https://sandbox.monnify.com"
+	}
+	m.APIKey, m.SecretKey = strings.TrimSpace(m.APIKey), strings.TrimSpace(m.SecretKey)
+	m.ContractCode, m.WalletAccount = strings.TrimSpace(m.ContractCode), strings.TrimSpace(m.WalletAccount)
+	if m.APIKey == "" || m.SecretKey == "" || m.ContractCode == "" {
+		writeErr(w, http.StatusBadRequest, "Monnify API key, secret key and contract code are required")
+		return
+	}
+	if len(m.WalletAccount) != 10 {
+		writeErr(w, http.StatusBadRequest, "Monnify wallet account must be your 10-digit wallet account number")
+		return
+	}
+	if err := s.validateMonnify(r.Context(), m.BaseURL, m.APIKey, m.SecretKey, m.ContractCode, m.WalletAccount); err != nil {
+		writeErr(w, http.StatusBadRequest, "could not verify your Monnify credentials — check the API key, secret and contract code")
+		return
+	}
+	apiEnc, err1 := s.enc.Encrypt(m.APIKey)
+	secEnc, err2 := s.enc.Encrypt(m.SecretKey)
+	if err1 != nil || err2 != nil {
+		writeErr(w, http.StatusInternalServerError, "could not secure credentials")
+		return
+	}
+	creds := store.MonnifyCreds{BaseURL: m.BaseURL, APIKeyEnc: apiEnc, SecretKeyEnc: secEnc, ContractCode: m.ContractCode, WalletAccount: m.WalletAccount}
+	ws, err := s.store.CreateWorkspace(r.Context(), u.ID, body.Name, body.OrgName, body.UseCase, creds)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, ws)
+}
+
+// handleUpdateMonnify updates a workspace's Monnify credentials from Settings.
+func (s *Server) handleUpdateMonnify(w http.ResponseWriter, r *http.Request) {
+	ws, ok := s.workspaceFor(w, r)
+	if !ok {
+		return
+	}
+	var m struct {
+		BaseURL       string `json:"baseUrl"`
+		APIKey        string `json:"apiKey"`
+		SecretKey     string `json:"secretKey"`
+		ContractCode  string `json:"contractCode"`
+		WalletAccount string `json:"walletAccount"`
+	}
+	if err := decodeJSON(r, &m); err != nil {
+		writeErr(w, http.StatusBadRequest, "invalid json")
+		return
+	}
+	m.BaseURL = strings.TrimSpace(m.BaseURL)
+	if m.BaseURL == "" {
+		m.BaseURL = "https://sandbox.monnify.com"
+	}
+	m.APIKey, m.SecretKey = strings.TrimSpace(m.APIKey), strings.TrimSpace(m.SecretKey)
+	m.ContractCode, m.WalletAccount = strings.TrimSpace(m.ContractCode), strings.TrimSpace(m.WalletAccount)
+	if m.APIKey == "" || m.SecretKey == "" || m.ContractCode == "" {
+		writeErr(w, http.StatusBadRequest, "Monnify API key, secret key and contract code are required")
+		return
+	}
+	if len(m.WalletAccount) != 10 {
+		writeErr(w, http.StatusBadRequest, "Monnify wallet account must be your 10-digit wallet account number")
+		return
+	}
+	if err := s.validateMonnify(r.Context(), m.BaseURL, m.APIKey, m.SecretKey, m.ContractCode, m.WalletAccount); err != nil {
+		writeErr(w, http.StatusBadRequest, "could not verify your Monnify credentials")
+		return
+	}
+	apiEnc, err1 := s.enc.Encrypt(m.APIKey)
+	secEnc, err2 := s.enc.Encrypt(m.SecretKey)
+	if err1 != nil || err2 != nil {
+		writeErr(w, http.StatusInternalServerError, "could not secure credentials")
+		return
+	}
+	if !s.store.SetMonnifyCreds(r.Context(), ws.ID, store.MonnifyCreds{BaseURL: m.BaseURL, APIKeyEnc: apiEnc, SecretKeyEnc: secEnc, ContractCode: m.ContractCode, WalletAccount: m.WalletAccount}) {
+		writeErr(w, http.StatusInternalServerError, "could not save credentials")
+		return
+	}
+	updated, _ := s.store.WorkspaceByID(r.Context(), ws.ID)
+	writeJSON(w, http.StatusOK, updated)
 }
 
 func (s *Server) handleUpdateWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -524,8 +611,9 @@ func (s *Server) handleDisburseLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	wsID := ws.ID
-	if s.monnify == nil {
-		writeErr(w, http.StatusServiceUnavailable, "monnify not configured")
+	mon, err := s.monnifyForWorkspace(ws)
+	if err != nil {
+		writeErr(w, http.StatusServiceUnavailable, "connect Monnify in Settings to disburse")
 		return
 	}
 	req, found := s.store.RequestByID(r.Context(), r.PathValue("id"))
@@ -548,9 +636,9 @@ func (s *Server) handleDisburseLink(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"status": "otp_required", "reference": req.DisbursementRef, "pending": true})
 		return
 	}
-	source := s.monnify.WalletAccount
+	source := mon.WalletAccount
 	if len(source) != 10 {
-		writeErr(w, http.StatusServiceUnavailable, "disbursement wallet not configured — set MONNIFY_WALLET_ACCOUNT to your 10-digit Monnify wallet account number (Dashboard → Disbursements → Wallet)")
+		writeErr(w, http.StatusServiceUnavailable, "disbursement wallet not set — add your 10-digit Monnify wallet account in Settings → Payments")
 		return
 	}
 	// Unique reference per attempt so an expired/failed payout can be retried
@@ -564,7 +652,7 @@ func (s *Server) handleDisburseLink(w http.ResponseWriter, r *http.Request) {
 	if name == "" {
 		name = "Kova Borrower"
 	}
-	d, err := s.monnify.Disburse(r.Context(), source, float64(req.OfferAmount)/100, ref, narration, req.BankCode, req.AccountNumber, name)
+	d, err := mon.Disburse(r.Context(), source, float64(req.OfferAmount)/100, ref, narration, req.BankCode, req.AccountNumber, name)
 	if err != nil {
 		writeErr(w, http.StatusBadGateway, "disbursement failed: "+err.Error())
 		return
@@ -631,8 +719,9 @@ func (s *Server) handleAuthorizeLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	wsID := ws.ID
-	if s.monnify == nil {
-		writeErr(w, http.StatusServiceUnavailable, "monnify not configured")
+	mon, err := s.monnifyForWorkspace(ws)
+	if err != nil {
+		writeErr(w, http.StatusServiceUnavailable, "connect Monnify in Settings to disburse")
 		return
 	}
 	req, found := s.store.RequestByID(r.Context(), r.PathValue("id"))
@@ -655,7 +744,7 @@ func (s *Server) handleAuthorizeLink(w http.ResponseWriter, r *http.Request) {
 	if ref == "" {
 		ref = "kova_" + req.ID
 	}
-	d, err := s.monnify.AuthorizeDisbursement(r.Context(), ref, strings.TrimSpace(body.OTP))
+	d, err := mon.AuthorizeDisbursement(r.Context(), ref, strings.TrimSpace(body.OTP))
 	if err != nil {
 		writeErr(w, http.StatusBadGateway, err.Error())
 		return
@@ -675,8 +764,9 @@ func (s *Server) handleResendOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	wsID := ws.ID
-	if s.monnify == nil {
-		writeErr(w, http.StatusServiceUnavailable, "monnify not configured")
+	mon, err := s.monnifyForWorkspace(ws)
+	if err != nil {
+		writeErr(w, http.StatusServiceUnavailable, "connect Monnify in Settings to disburse")
 		return
 	}
 	req, found := s.store.RequestByID(r.Context(), r.PathValue("id"))
@@ -688,7 +778,7 @@ func (s *Server) handleResendOTP(w http.ResponseWriter, r *http.Request) {
 	if ref == "" {
 		ref = "kova_" + req.ID
 	}
-	if err := s.monnify.ResendDisbursementOTP(r.Context(), ref); err != nil {
+	if err := mon.ResendDisbursementOTP(r.Context(), ref); err != nil {
 		writeErr(w, http.StatusBadGateway, err.Error())
 		return
 	}
@@ -718,8 +808,9 @@ func (s *Server) handleVerifyRepayment(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if s.monnify == nil {
-		writeErr(w, http.StatusServiceUnavailable, "monnify not configured")
+	mon, err := s.monnifyFor(r.Context(), wsID)
+	if err != nil {
+		writeErr(w, http.StatusServiceUnavailable, "connect Monnify in Settings to verify payments")
 		return
 	}
 	req, found := s.store.RequestByID(r.Context(), r.PathValue("id"))
@@ -735,7 +826,7 @@ func (s *Server) handleVerifyRepayment(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "this loan has not been disbursed")
 		return
 	}
-	txn, err := s.monnify.VerifyTransaction(r.Context(), "kova_repay_"+req.ID)
+	txn, err := mon.VerifyTransaction(r.Context(), "kova_repay_"+req.ID)
 	if err != nil {
 		writeErr(w, http.StatusBadGateway, err.Error())
 		return

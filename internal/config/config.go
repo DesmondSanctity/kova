@@ -11,14 +11,7 @@ type Config struct {
 	GitHubSecret string
 	ResendAPIKey string
 	EmailFrom    string
-	Monnify      MonnifyConfig
-}
-
-type MonnifyConfig struct {
-	BaseURL      string
-	APIKey       string
-	SecretKey    string
-	ContractCode string
+	SecretEncKey string
 }
 
 func Load() Config {
@@ -30,12 +23,7 @@ func Load() Config {
 		GitHubSecret: os.Getenv("KOVA_GITHUB_CLIENT_SECRET"),
 		ResendAPIKey: os.Getenv("RESEND_API_KEY"),
 		EmailFrom:    env("EMAIL_FROM", "Kova <onboarding@resend.dev>"),
-		Monnify: MonnifyConfig{
-			BaseURL:      env("MONNIFY_BASE_URL", "https://sandbox.monnify.com"),
-			APIKey:       env("MONNIFY_API_KEY", "MK_TEST_GC3B8XG2XX"),
-			SecretKey:    env("MONNIFY_SECRET_KEY", "A663NRZA544DDPEM7KDN7Z8HRV6YXD8S"),
-			ContractCode: env("MONNIFY_CONTRACT_CODE", "5867418298"),
-		},
+		SecretEncKey: os.Getenv("KOVA_SECRET_ENC_KEY"),
 	}
 }
 

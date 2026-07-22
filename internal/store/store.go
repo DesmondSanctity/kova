@@ -52,7 +52,25 @@ type Workspace struct {
 	SupportEmail   string        `json:"supportEmail"`
 	LoanProducts   []LoanProduct `json:"loanProducts"`
 	MinScore       int           `json:"minScore"`
-	CreatedAt      time.Time     `json:"createdAt"`
+	// Per-lender Monnify credentials. Secrets are stored encrypted; the API key
+	// and secret are never serialized to clients.
+	MonnifyBaseURL       string    `json:"monnifyBaseUrl"`
+	MonnifyContractCode  string    `json:"monnifyContractCode"`
+	MonnifyWalletAccount string    `json:"monnifyWalletAccount"`
+	MonnifyAPIKeyEnc     string    `json:"-"`
+	MonnifySecretKeyEnc  string    `json:"-"`
+	MonnifyConnected     bool      `json:"monnifyConnected"`
+	CreatedAt            time.Time `json:"createdAt"`
+}
+
+// MonnifyCreds carries a workspace's payment credentials for create/update.
+// APIKeyEnc and SecretKeyEnc hold already-encrypted values.
+type MonnifyCreds struct {
+	BaseURL       string
+	APIKeyEnc     string
+	SecretKeyEnc  string
+	ContractCode  string
+	WalletAccount string
 }
 
 // LoanProduct is a reusable offer template a lender exposes to borrowers.
@@ -283,19 +301,25 @@ func (s *Store) ResetPassword(ctx context.Context, email, code, newPassword stri
 
 // --- workspaces ---
 
-func (s *Store) CreateWorkspace(ctx context.Context, ownerID, name, orgName, useCase string) (*Workspace, error) {
+func (s *Store) CreateWorkspace(ctx context.Context, ownerID, name, orgName, useCase string, mc MonnifyCreds) (*Workspace, error) {
 	if useCase != "individual" {
 		useCase = "fintech"
 	}
-	ws := &Workspace{ID: id("ws"), Name: name, OrgName: orgName, UseCase: useCase, Plan: "pilot", OwnerID: ownerID, CreatedAt: time.Now().UTC()}
+	ws := &Workspace{ID: id("ws"), Name: name, OrgName: orgName, UseCase: useCase, Plan: "pilot", OwnerID: ownerID,
+		MonnifyBaseURL: mc.BaseURL, MonnifyContractCode: mc.ContractCode, MonnifyWalletAccount: mc.WalletAccount,
+		MonnifyAPIKeyEnc: mc.APIKeyEnc, MonnifySecretKeyEnc: mc.SecretKeyEnc, MonnifyConnected: mc.SecretKeyEnc != "",
+		CreatedAt: time.Now().UTC()}
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback(ctx)
 	if _, err := tx.Exec(ctx,
-		`INSERT INTO workspaces(id,name,org_name,use_case,plan,owner_id,created_at) VALUES($1,$2,$3,$4,$5,$6,$7)`,
-		ws.ID, ws.Name, ws.OrgName, ws.UseCase, ws.Plan, ws.OwnerID, ws.CreatedAt); err != nil {
+		`INSERT INTO workspaces(id,name,org_name,use_case,plan,owner_id,created_at,
+			monnify_base_url,monnify_api_key_enc,monnify_secret_key_enc,monnify_contract_code,monnify_wallet_account)
+		 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+		ws.ID, ws.Name, ws.OrgName, ws.UseCase, ws.Plan, ws.OwnerID, ws.CreatedAt,
+		mc.BaseURL, mc.APIKeyEnc, mc.SecretKeyEnc, mc.ContractCode, mc.WalletAccount); err != nil {
 		return nil, err
 	}
 	if _, err := tx.Exec(ctx,
@@ -305,17 +329,27 @@ func (s *Store) CreateWorkspace(ctx context.Context, ownerID, name, orgName, use
 	return ws, tx.Commit(ctx)
 }
 
+// SetMonnifyCreds updates a workspace's payment credentials (used from Settings).
+func (s *Store) SetMonnifyCreds(ctx context.Context, wsID string, mc MonnifyCreds) bool {
+	ct, err := s.pool.Exec(ctx,
+		`UPDATE workspaces SET monnify_base_url=$1, monnify_api_key_enc=$2, monnify_secret_key_enc=$3,
+			monnify_contract_code=$4, monnify_wallet_account=$5 WHERE id=$6`,
+		mc.BaseURL, mc.APIKeyEnc, mc.SecretKeyEnc, mc.ContractCode, mc.WalletAccount, wsID)
+	return err == nil && ct.RowsAffected() > 0
+}
+
 func (s *Store) WorkspaceForUser(ctx context.Context, userID string) (*Workspace, bool) {
 	var w Workspace
 	var products []byte
 	err := s.pool.QueryRow(ctx,
-		`SELECT w.id,w.name,w.org_name,w.use_case,w.plan,w.owner_id,w.brand_name,w.brand_color,w.brand_text_color,w.support_email,w.loan_products,w.min_score,w.created_at
+		`SELECT w.id,w.name,w.org_name,w.use_case,w.plan,w.owner_id,w.brand_name,w.brand_color,w.brand_text_color,w.support_email,w.loan_products,w.min_score,w.monnify_base_url,w.monnify_contract_code,w.monnify_wallet_account,w.monnify_api_key_enc,w.monnify_secret_key_enc,w.created_at
 		 FROM workspace_members m JOIN workspaces w ON w.id=m.workspace_id
 		 WHERE m.user_id=$1 ORDER BY w.created_at LIMIT 1`, userID).
-		Scan(&w.ID, &w.Name, &w.OrgName, &w.UseCase, &w.Plan, &w.OwnerID, &w.BrandName, &w.BrandColor, &w.BrandTextColor, &w.SupportEmail, &products, &w.MinScore, &w.CreatedAt)
+		Scan(&w.ID, &w.Name, &w.OrgName, &w.UseCase, &w.Plan, &w.OwnerID, &w.BrandName, &w.BrandColor, &w.BrandTextColor, &w.SupportEmail, &products, &w.MinScore, &w.MonnifyBaseURL, &w.MonnifyContractCode, &w.MonnifyWalletAccount, &w.MonnifyAPIKeyEnc, &w.MonnifySecretKeyEnc, &w.CreatedAt)
 	if err != nil {
 		return nil, false
 	}
+	w.MonnifyConnected = w.MonnifySecretKeyEnc != ""
 	_ = json.Unmarshal(products, &w.LoanProducts)
 	return &w, true
 }
@@ -325,12 +359,13 @@ func (s *Store) WorkspaceByID(ctx context.Context, wsID string) (*Workspace, boo
 	var w Workspace
 	var products []byte
 	err := s.pool.QueryRow(ctx,
-		`SELECT id,name,org_name,use_case,plan,owner_id,brand_name,brand_color,brand_text_color,support_email,loan_products,min_score,created_at
+		`SELECT id,name,org_name,use_case,plan,owner_id,brand_name,brand_color,brand_text_color,support_email,loan_products,min_score,monnify_base_url,monnify_contract_code,monnify_wallet_account,monnify_api_key_enc,monnify_secret_key_enc,created_at
 		 FROM workspaces WHERE id=$1`, wsID).
-		Scan(&w.ID, &w.Name, &w.OrgName, &w.UseCase, &w.Plan, &w.OwnerID, &w.BrandName, &w.BrandColor, &w.BrandTextColor, &w.SupportEmail, &products, &w.MinScore, &w.CreatedAt)
+		Scan(&w.ID, &w.Name, &w.OrgName, &w.UseCase, &w.Plan, &w.OwnerID, &w.BrandName, &w.BrandColor, &w.BrandTextColor, &w.SupportEmail, &products, &w.MinScore, &w.MonnifyBaseURL, &w.MonnifyContractCode, &w.MonnifyWalletAccount, &w.MonnifyAPIKeyEnc, &w.MonnifySecretKeyEnc, &w.CreatedAt)
 	if err != nil {
 		return nil, false
 	}
+	w.MonnifyConnected = w.MonnifySecretKeyEnc != ""
 	_ = json.Unmarshal(products, &w.LoanProducts)
 	return &w, true
 }

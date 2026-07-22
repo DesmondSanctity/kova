@@ -255,6 +255,38 @@
       minScore: workspace?.minScore ? String(workspace.minScore) : '',
       loanProducts: (workspace?.loanProducts || []).map((p) => ({ maxAmount: p.maxAmount ? p.maxAmount / 100 : '', interestRate: p.interestRate || '', tenorDays: p.tenorDays || '' })),
     };
+    seedMonnify();
+  }
+
+  // ---- payments (per-lender Monnify) ----
+  let monForm = $state({ baseUrl: 'https://sandbox.monnify.com', apiKey: '', secretKey: '', contractCode: '', walletAccount: '' });
+  let savingMonnify = $state(false);
+  function seedMonnify() {
+    monForm = {
+      baseUrl: workspace?.monnifyBaseUrl || 'https://sandbox.monnify.com',
+      apiKey: '',
+      secretKey: '',
+      contractCode: workspace?.monnifyContractCode || '',
+      walletAccount: workspace?.monnifyWalletAccount || '',
+    };
+  }
+  async function saveMonnify(e) {
+    e?.preventDefault();
+    savingMonnify = true;
+    try {
+      const r = await api('/api/workspace/monnify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(monForm),
+      });
+      const d = await r.json();
+      if (!r.ok) { toast.error(d.error || 'Could not save Monnify credentials'); return; }
+      workspace = d;
+      seedMonnify();
+      toast.success('Monnify connected');
+    } catch (_) {
+      toast.error('Network error. Please try again.');
+    } finally { savingMonnify = false; }
   }
 
   function addProduct() {
@@ -922,6 +954,49 @@
               <div><div class="text-[13px] text-faint">Plan</div><div class="mt-1 text-[16px] capitalize text-fg">{workspace?.plan || '—'}</div></div>
             </div>
           </div>
+
+          <!-- Payments (Monnify) -->
+          <form onsubmit={saveMonnify} class="mt-5 rounded-2xl border border-line bg-surface p-6 lg:p-7">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <div class="text-[15px] font-medium text-fg">Payments · Monnify</div>
+                <p class="mt-1 text-[13.5px] text-muted">Kova disburses and collects on your own Monnify account. Secrets are encrypted at rest.</p>
+              </div>
+              {#if workspace?.monnifyConnected}
+                <span class="shrink-0 rounded-full bg-accent/15 px-3 py-1 text-[12.5px] font-medium text-accent">Connected</span>
+              {:else}
+                <span class="shrink-0 rounded-full bg-red-500/15 px-3 py-1 text-[12.5px] font-medium text-red-400">Not connected</span>
+              {/if}
+            </div>
+            <div class="mt-5 grid gap-5 sm:grid-cols-2">
+              <label class="block">
+                <span class="mb-2 block text-[13.5px] font-medium text-muted">Environment</span>
+                <select bind:value={monForm.baseUrl} class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] text-fg outline-none focus:border-violet">
+                  <option value="https://sandbox.monnify.com">Sandbox</option>
+                  <option value="https://api.monnify.com">Live</option>
+                </select>
+              </label>
+              <label class="block">
+                <span class="mb-2 block text-[13.5px] font-medium text-muted">Contract code</span>
+                <input bind:value={monForm.contractCode} inputmode="numeric" placeholder="1234567890" class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] text-fg placeholder:text-faint outline-none focus:border-violet" />
+              </label>
+              <label class="block">
+                <span class="mb-2 block text-[13.5px] font-medium text-muted">API key</span>
+                <input bind:value={monForm.apiKey} placeholder={workspace?.monnifyConnected ? 're-enter to update' : 'MK_PROD_XXXXXXXX'} class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] text-fg placeholder:text-faint outline-none focus:border-violet" />
+              </label>
+              <label class="block">
+                <span class="mb-2 block text-[13.5px] font-medium text-muted">Secret key</span>
+                <input bind:value={monForm.secretKey} type="password" placeholder={workspace?.monnifyConnected ? 're-enter to update' : '••••••••••••'} class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] text-fg placeholder:text-faint outline-none focus:border-violet" />
+              </label>
+              <label class="block sm:col-span-2">
+                <span class="mb-2 block text-[13.5px] font-medium text-muted">Wallet account number</span>
+                <input bind:value={monForm.walletAccount} inputmode="numeric" maxlength="10" placeholder="0123456789 (10-digit source wallet)" class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] text-fg placeholder:text-faint outline-none focus:border-violet" />
+              </label>
+            </div>
+            <div class="mt-5">
+              <button type="submit" disabled={savingMonnify} class="rounded-lg bg-fg px-5 py-2.5 text-[15px] font-semibold text-bg transition-opacity hover:opacity-90 disabled:opacity-60">{savingMonnify ? 'Verifying with Monnify…' : 'Save Monnify credentials'}</button>
+            </div>
+          </form>
 
           <form onsubmit={saveSettings} class="mt-5 grid items-start gap-5 lg:grid-cols-[1.6fr_1fr]">
             <!-- left column -->

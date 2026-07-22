@@ -11,7 +11,7 @@ import (
 	"kova/internal/db"
 	"kova/internal/email"
 	"kova/internal/extract/gofitz"
-	"kova/internal/monnify"
+	"kova/internal/secretbox"
 	"kova/internal/store"
 )
 
@@ -25,6 +25,11 @@ func main() {
 	}
 	defer pool.Close()
 
+	enc, err := secretbox.New(cfg.SecretEncKey)
+	if err != nil {
+		log.Fatalf("secret encryption: %v", err)
+	}
+
 	var mailer email.Sender = email.Noop{}
 	if cfg.ResendAPIKey != "" && cfg.EmailFrom != "" {
 		mailer = email.NewResend(cfg.ResendAPIKey, cfg.EmailFrom)
@@ -32,10 +37,10 @@ func main() {
 
 	srv := api.New(
 		gofitz.New(),
-		monnify.New(),
 		store.New(pool),
 		api.GitHubConfig{ClientID: cfg.GitHubID, ClientSecret: cfg.GitHubSecret, BaseURL: cfg.BaseURL},
 		mailer,
+		enc,
 	)
 
 	log.Printf("kova listening on %s", cfg.Addr)

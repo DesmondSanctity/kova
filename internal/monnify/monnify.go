@@ -72,6 +72,21 @@ func New() *Client {
 	}
 }
 
+// NewWithCreds builds a client from explicit per-lender credentials.
+func NewWithCreds(baseURL, apiKey, secretKey, contractCode, walletAccount string) *Client {
+	if baseURL == "" {
+		baseURL = defaultBaseURL
+	}
+	return &Client{
+		BaseURL:       baseURL,
+		APIKey:        apiKey,
+		SecretKey:     secretKey,
+		ContractCode:  contractCode,
+		WalletAccount: walletAccount,
+		HTTP:          &http.Client{Timeout: 20 * time.Second},
+	}
+}
+
 type response[T any] struct {
 	RequestSuccessful bool   `json:"requestSuccessful"`
 	ResponseMessage   string `json:"responseMessage"`

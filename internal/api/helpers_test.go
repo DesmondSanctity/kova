@@ -7,6 +7,7 @@ import (
 
 	"kova/internal/db"
 	"kova/internal/extract"
+	"kova/internal/secretbox"
 	"kova/internal/store"
 )
 
@@ -29,5 +30,9 @@ func testStore(t *testing.T) *store.Store {
 }
 
 func newServer(t *testing.T, ex extract.Extractor) *Server {
-	return New(ex, nil, testStore(t), GitHubConfig{}, nil)
+	box, err := secretbox.New("test-encryption-key")
+	if err != nil {
+		t.Fatalf("secretbox: %v", err)
+	}
+	return New(ex, testStore(t), GitHubConfig{}, nil, box)
 }
