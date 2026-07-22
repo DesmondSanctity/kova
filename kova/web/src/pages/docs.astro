@@ -1,0 +1,208 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+
+const sections = [
+  ['overview', 'Overview'],
+  ['auth', 'Authentication'],
+  ['quickstart', 'Quickstart'],
+  ['sdk-widget', 'SDK · Upload widget'],
+  ['sdk-client', 'SDK · Assessment client'],
+  ['api', 'REST API'],
+  ['lifecycle', 'Request lifecycle'],
+  ['webhooks', 'Webhooks'],
+];
+
+const endpoints = [
+  ['POST', '/v1/score', 'Score uploaded statements directly (multipart, field: statements). Key: any.'],
+  ['POST', '/v1/requests', 'Create a shareable borrower link. Key: any.'],
+  ['GET', '/v1/requests/{id}', 'Read a request: status, decision, offer, score report (non-PII). Public.'],
+  ['POST', '/v1/requests/{id}/intake', 'Borrower submits name, email, amount. Public (link is the capability).'],
+  ['POST', '/v1/requests/{id}/score', 'Borrower uploads statements; scored async, result emailed. Public.'],
+  ['POST', '/v1/requests/{id}/accept', 'Borrower accepts an offer with account + BVN. Public.'],
+  ['POST', '/api/links/{id}/reject', 'Lender declines a request before payout. Session or secret key.'],
+  ['GET', '/api/links', 'List all requests for the workspace. Session or secret key.'],
+];
+---
+
+<Base title="Docs · Kova" description="Kova developer documentation: SDK widget, lender client, REST API, and webhooks.">
+  <Nav />
+  <main class="mx-auto max-w-[1240px] px-6 py-12 lg:grid lg:grid-cols-[220px_1fr] lg:gap-12">
+    <!-- TOC -->
+    <aside class="hidden lg:block">
+      <nav class="sticky top-24 space-y-1">
+        <div class="mb-3 font-mono text-[11px] uppercase tracking-wider text-faint">Documentation</div>
+        {sections.map(([id, label]) => (
+          <a href={`#${id}`} class="block rounded-lg px-3 py-1.5 text-[14px] text-muted transition-colors hover:bg-surface hover:text-fg">{label}</a>
+        ))}
+      </nav>
+    </aside>
+
+    <article class="min-w-0 max-w-[760px]">
+      <p class="text-eyebrow">Developers</p>
+      <h1 class="mt-3 text-[40px] font-light leading-[1.1] tracking-tight">Build credit into your product</h1>
+      <p class="mt-4 text-[18px] leading-relaxed text-muted">
+        Kova turns bank and wallet statements into an explainable credit score and offer decision.
+        Share a secure link and run the full lend loop — score, offer, accept, disburse and collect —
+        from your dashboard today.
+      </p>
+
+      <div class="mt-6 flex items-start gap-3 rounded-xl border border-violet/30 bg-violet/[0.06] p-4">
+        <span class="mt-0.5 shrink-0 rounded-full border border-violet/30 bg-violet/10 px-2.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-violet">Coming soon</span>
+        <p class="text-[14.5px] leading-relaxed text-muted">
+          The <span class="text-fg">SDK widget</span>, <span class="text-fg">JS client</span> and
+          <span class="text-fg">REST API</span> below are a preview of what's landing next. Today, use the
+          shareable link + dashboard flow — it's fully live. API keys and programmatic access are opening soon.
+        </p>
+      </div>
+
+      <section id="overview" class="mt-14 scroll-mt-24">
+        <h2 class="text-[24px] font-medium tracking-tight">Overview</h2>
+        <p class="mt-3 text-[16px] leading-relaxed text-muted">Ways to integrate, from live today to coming soon:</p>
+        <ul class="mt-4 space-y-3 text-[16px] text-muted">
+          <li><span class="text-fg">Shareable link</span> <span class="ml-1 rounded bg-accent/15 px-1.5 py-0.5 text-[11px] font-medium text-accent">Live</span> — create a link, send it to a borrower. They upload, we score, and you get an offer decision. Disburse from your dashboard. Zero frontend work.</li>
+          <li><span class="text-fg">SDK widget</span> <span class="ml-1 rounded bg-violet/15 px-1.5 py-0.5 text-[11px] font-medium text-violet">Soon</span> — embed a polished upload widget in your own app with one script tag.</li>
+          <li><span class="text-fg">REST API + client</span> <span class="ml-1 rounded bg-violet/15 px-1.5 py-0.5 text-[11px] font-medium text-violet">Soon</span> — drive scoring, offers, and rejection programmatically.</li>
+        </ul>
+      </section>
+
+      <section id="auth" class="mt-14 scroll-mt-24">
+        <h2 class="text-[24px] font-medium tracking-tight">Authentication</h2>
+        <p class="mt-3 text-[16px] leading-relaxed text-muted">
+          Create keys in your dashboard under <span class="text-fg">API keys</span>. Each workspace gets a
+          <span class="font-mono text-[14px] text-fg">pk_</span> publishable key (safe in the browser SDK) and a
+          <span class="font-mono text-[14px] text-fg">sk_</span> secret key (server-side only). Send it as a Bearer token:
+        </p>
+        <pre class="code">Authorization: Bearer sk_live_xxx</pre>
+        <p class="mt-3 text-[15px] leading-relaxed text-muted">
+          Publishable keys can score. Privileged actions (list links, reject) require a secret key or a
+          signed-in dashboard session. Keys are scoped to their workspace — you can never act on another tenant.
+          You can restrict a key to specific domains and IPs from the dashboard. Disbursement is not exposed
+          to API keys — it's a dashboard-only action against your connected wallet.
+        </p>
+      </section>
+
+      <section id="quickstart" class="mt-14 scroll-mt-24">
+        <h2 class="text-[24px] font-medium tracking-tight">Quickstart</h2>
+        <p class="mt-3 text-[16px] leading-relaxed text-muted">Score a statement in one call:</p>
+        <pre class="code">{`curl -X POST https://api.kova.dev/v1/score \\
+  -H "Authorization: Bearer sk_live_xxx" \\
+  -F "statements=@statement.pdf"`}</pre>
+      </section>
+
+      <section id="sdk-widget" class="mt-14 scroll-mt-24">
+        <h2 class="text-[24px] font-medium tracking-tight">SDK · Upload widget</h2>
+        <p class="mt-3 text-[16px] leading-relaxed text-muted">Drop the widget into any page. Link mode needs no key.</p>
+        <pre class="code">{`<script src="https://unpkg.com/@kova/sdk"></script>
+<script>
+  Kova.init({
+    requestId: 'REQUEST_ID',        // link mode (or key: 'pk_...')
+    container: document.getElementById('mount'),
+    autoOpen: true,
+    onResult: (report) => console.log(report.score),   // direct/key mode
+    onSubmitted: () => console.log('emailed'),          // link mode (async)
+    onError: (err) => console.error(err),
+  });
+</script>`}</pre>
+      </section>
+
+      <section id="sdk-client" class="mt-14 scroll-mt-24">
+        <h2 class="text-[24px] font-medium tracking-tight">SDK · Assessment client</h2>
+        <p class="mt-3 text-[16px] leading-relaxed text-muted">A typed client for creditworthiness assessment (server-side, secret key):</p>
+        <pre class="code">{`import { Kova } from '@kova/sdk';
+
+const kova = Kova.client({ apiBase: 'https://api.kova.dev', key: 'sk_live_xxx' });
+
+const link = await kova.createLink('John Doe · loan enquiry');
+// share link.borrowerUrl with the borrower …
+
+const req = await kova.getRequest(link.id);   // status, decision, offer, report
+if (req.decision === 'declined') {
+  await kova.reject(link.id);
+}
+// When the borrower accepts, disburse the loan from your Kova dashboard.`}</pre>
+      </section>
+
+      <section id="api" class="mt-14 scroll-mt-24">
+        <h2 class="text-[24px] font-medium tracking-tight">REST API</h2>
+        <div class="mt-4 overflow-hidden rounded-xl border border-line">
+          <table class="w-full text-left text-[14px]">
+            <thead class="border-b border-line bg-surface/60 font-mono text-[11px] uppercase tracking-wider text-faint">
+              <tr><th class="px-4 py-2.5 font-normal">Method</th><th class="px-4 py-2.5 font-normal">Endpoint</th><th class="px-4 py-2.5 font-normal">Description</th></tr>
+            </thead>
+            <tbody>
+              {endpoints.map(([m, path, desc]) => (
+                <tr class="border-b border-line/60 last:border-0">
+                  <td class="px-4 py-3 font-mono text-[12.5px] text-violet">{m}</td>
+                  <td class="px-4 py-3 font-mono text-[12.5px] text-fg">{path}</td>
+                  <td class="px-4 py-3 text-muted">{desc}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="lifecycle" class="mt-14 scroll-mt-24">
+        <h2 class="text-[24px] font-medium tracking-tight">Request lifecycle</h2>
+        <p class="mt-3 text-[16px] leading-relaxed text-muted">A shareable request moves through these states:</p>
+        <div class="mt-4 flex flex-wrap items-center gap-2 font-mono text-[13px]">
+          {['pending', 'scored', 'accepted', 'disbursed'].map((s, i) => (
+            <>
+              {i > 0 && <span class="text-faint">→</span>}
+              <span class="rounded-md border border-line bg-surface px-2.5 py-1 text-fg">{s}</span>
+            </>
+          ))}
+          <span class="text-faint">·</span>
+          <span class="rounded-md border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-red-300">rejected</span>
+        </div>
+        <ul class="mt-4 space-y-2 text-[15px] leading-relaxed text-muted">
+          <li><span class="font-mono text-[13px] text-fg">pending</span> — link created; awaiting borrower intake + upload.</li>
+          <li><span class="font-mono text-[13px] text-fg">scored</span> — statements scored; an offer decision (approved / counter / declined) is produced and emailed.</li>
+          <li><span class="font-mono text-[13px] text-fg">accepted</span> — borrower confirmed a payout account; ready to disburse from your dashboard.</li>
+          <li><span class="font-mono text-[13px] text-fg">disbursed</span> — funds sent via Monnify (dashboard action).</li>
+          <li><span class="font-mono text-[13px] text-red-300">rejected</span> — lender declined before payout. Links expire after 30 days.</li>
+        </ul>
+      </section>
+
+      <section id="webhooks" class="mt-14 scroll-mt-24">
+        <h2 class="text-[24px] font-medium tracking-tight">Webhooks</h2>
+        <p class="mt-3 text-[16px] leading-relaxed text-muted">
+          Point Monnify's disbursement webhook at <span class="font-mono text-[14px] text-fg">/webhooks/monnify</span>.
+          Kova verifies the <span class="font-mono text-[14px] text-fg">monnify-signature</span> (HMAC-SHA512) and
+          updates the final payout status. A failed or reversed transfer automatically returns the loan to
+          <span class="font-mono text-[14px] text-fg">accepted</span> so it can be retried.
+        </p>
+      </section>
+
+      <div class="mt-16 rounded-2xl border border-line bg-surface p-7">
+        <h3 class="text-[19px] font-medium tracking-tight text-fg">Ready to start?</h3>
+        <p class="mt-2 text-[15px] text-muted">Create a workspace, grab your keys, and score your first statement.</p>
+        <a href="/signup" class="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-fg px-5 py-2.5 text-[15px] font-semibold text-bg transition-opacity hover:opacity-90">Get started free <span class="opacity-60">›</span></a>
+      </div>
+    </article>
+  </main>
+
+  <footer class="border-t border-line/60">
+    <div class="mx-auto flex max-w-[1240px] flex-col items-center justify-between gap-3 px-6 py-8 text-[13px] text-faint sm:flex-row">
+      <span>© {new Date().getFullYear()} Kova</span>
+      <a href="/" class="transition-colors hover:text-fg">Back to home</a>
+    </div>
+  </footer>
+</Base>
+
+<style>
+  .code {
+    margin-top: 0.75rem;
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid var(--color-line);
+    background: var(--color-surface);
+    padding: 16px 18px;
+    font-family: var(--font-mono);
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--color-fg);
+    white-space: pre;
+  }
+</style>

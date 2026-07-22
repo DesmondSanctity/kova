@@ -1,0 +1,20 @@
+# binaries
+/kova-server
+/server
+*.exe
+
+# never commit real bank statements (PII)
+*.pdf
+docs
+
+# node
+node_modules/
+
+# secrets / local env (keep .env.example)
+.env
+.env.*
+!.env.example
+
+# os / editor
+.DS_Store
+*.out

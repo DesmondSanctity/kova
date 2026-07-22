@@ -1,0 +1,38 @@
+{
+ "name": "@kova/sdk",
+ "version": "0.1.0",
+ "description": "Drop-in credit-scoring widget and client for any JS/TS frontend. Upload bank statements, get an explainable score.",
+ "type": "module",
+ "main": "./dist/kova.cjs",
+ "module": "./dist/kova.mjs",
+ "types": "./dist/index.d.ts",
+ "unpkg": "./dist/kova.global.js",
+ "exports": {
+  ".": {
+   "types": "./dist/index.d.ts",
+   "import": "./dist/kova.mjs",
+   "require": "./dist/kova.cjs"
+  }
+ },
+ "files": [
+  "dist"
+ ],
+ "scripts": {
+  "build": "node build.mjs && tsc -p tsconfig.json --emitDeclarationOnly",
+  "dev": "node build.mjs --watch"
+ },
+ "keywords": [
+  "credit",
+  "scoring",
+  "fintech",
+  "monnify",
+  "widget",
+  "kyc",
+  "nigeria"
+ ],
+ "license": "MIT",
+ "devDependencies": {
+  "esbuild": "^0.23.0",
+  "typescript": "^5.5.0"
+ }
+}

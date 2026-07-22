@@ -1,0 +1,9 @@
+---
+import AuthShell from '../layouts/AuthShell.astro';
+import ForgotForm from '../components/ForgotForm.svelte';
+---
+
+<AuthShell heading="Reset your password" sub="We will email you a 6-digit code to set a new one.">
+  <ForgotForm client:load />
+  <Fragment slot="footer">Remembered it? <a href="/login" class="font-medium text-fg underline underline-offset-2">Sign in</a></Fragment>
+</AuthShell>

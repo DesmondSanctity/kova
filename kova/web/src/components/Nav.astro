@@ -1,0 +1,70 @@
+---
+const links = [
+  { label: 'Product', href: '#product' },
+  { label: 'How it works', href: '#how' },
+  { label: 'Developers', href: '/docs' },
+  { label: 'Pricing', href: '#pricing' },
+];
+---
+
+<!-- Announce bar -->
+<a
+  href="/signup"
+  class="block w-full py-2.5 text-center text-[13.5px] font-medium text-white"
+  style="background:linear-gradient(to right,#1c0037,#009e7a)"
+>
+  New: score your first 1,000 statements free during pilot.
+  <span class="ml-1 underline underline-offset-2">Get started ›</span>
+</a>
+
+<header class="sticky top-0 z-50 border-b border-line/70 bg-bg/80 backdrop-blur-xl">
+  <nav class="mx-auto flex h-16 max-w-[1240px] items-center justify-between px-6">
+    <div class="flex items-center gap-9">
+      <a href="/" class="flex items-center gap-2.5">
+        <span class="grid h-6 w-6 place-items-center rounded-md bg-fg text-[13px] font-extrabold text-bg">K</span>
+        <span class="text-[15px] font-semibold tracking-tight">Kova</span>
+      </a>
+      <div class="hidden items-center gap-7 md:flex">
+        {links.map((l) => (
+          <a href={l.href} class="text-[14px] font-medium text-muted transition-colors hover:text-fg">{l.label}</a>
+        ))}
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <a href="/login" data-auth="out" class="hidden rounded-lg px-3 py-2 text-[14px] font-medium text-muted transition-colors hover:text-fg sm:inline-flex">Sign in</a>
+      <a href="/signup" data-auth="out" class="inline-flex items-center gap-1 rounded-[10px] border-[1.5px] border-fg bg-fg px-4 py-2 text-[14px] font-semibold text-bg transition-opacity hover:opacity-90">Get started <span class="opacity-60">›</span></a>
+      <a href="/dashboard" data-auth="in" class="hidden items-center gap-1.5 rounded-[10px] border-[1.5px] border-fg bg-fg px-4 py-2 text-[14px] font-semibold text-bg transition-opacity hover:opacity-90">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        Dashboard
+      </a>
+    </div>
+  </nav>
+</header>
+
+<style is:global>
+  /* Auth-aware nav: when signed in, hide the sign-in/get-started CTAs and show
+     the dashboard link. !important beats Tailwind's responsive display utilities
+     (e.g. the sign-in link's `hidden sm:inline-flex`). */
+  html.kova-authed [data-auth='out'] { display: none !important; }
+  html.kova-authed [data-auth='in'] { display: inline-flex !important; }
+</style>
+
+<script>
+  // Toggle the auth-aware nav state. Uses a cached hint (from the last /api/me
+  // result) to apply the correct state before first paint, avoiding a flash of
+  // "Sign in" for signed-in users, then reconciles with the server.
+  (() => {
+    const root = document.documentElement;
+    if (localStorage.getItem('kova_authed') === '1') root.classList.add('kova-authed');
+    (async () => {
+      try {
+        const r = await fetch('/api/me');
+        const me = r.ok ? await r.json() : null;
+        const authed = !!(me && me.user);
+        localStorage.setItem('kova_authed', authed ? '1' : '0');
+        root.classList.toggle('kova-authed', authed);
+      } catch (e) {}
+    })();
+  })();
+</script>

@@ -1,0 +1,33 @@
+PalmPay
+Account Statement
+Total Money In N220.49
+Total Money Out N23,469.85
+Name
+KELVIN MUSTAPHA
+Phone Number 0811 888 0013
+Account Number 811 888 0013
+Statement Period. 05/01/2025-07/31/2025
+Transaction Date Transaction Detail Money In (NGN) Money Out (NGN) Transaction ID
+07/30/2025 04:34:49 PM SmartEarn Withdraw +50.00 sh2pkux32dc00
+07/30/2025 06:46:56 AM Trial Cash Interest +0.28 u82pm84t4315y
+07/29/2025 12:56:52 PM SmartEarn Save 0.00 ai2pkule000
+07/29/2025 06:34:18 AM Trial Cash Interest +0.21 u82pkcvz6775e
+07/28/2025 02:59:22 PM Spend & Save Deposit - 20.00 at_2pj5lk91302
+07/28/2025 02:57:47 PM Betting Deposit -1.00 472pj5ix3fc008
+07/28/2025 06:33:33 AM Trial Cash Interest +0.28 u82pii6j16c0j
+07/27/2025 07:06:29 AM Spend & Save Withdraw +9.00 v32pgp1f91b00
+07/27/2025 06:43:56 AM Trial Cash Interest +0.14 u82pgnzu6a56d
+07/26/2025 06:48:00 AM Trial Cash Interest +0.14 u82petim6a72j
+07/25/2025 07:02:12 PM Spend & Save Deposit -8.40 at_2pdwua92b00
+07/25/2025 07:01:47 PM Top up Airtime -42.00 132pdwtide700
+07/25/2025 06:36:33 AM Trial Cash Interest +0.28 u82pcybj6a57a
+07/24/2025 06:37:39 AM Trial Cash Interest +0.28 u82pb3pd3442k
+07/23/2025 11:39:23 PM CashBox Auto Save -7.71 at_2pakc91d901
+07/23/2025 06:25:54 AM Trial Cash Interest +0.14 u82p98hs6961h
+07/23/2025 06:25:03 AM CashBox Withdraw +7.71 t62p98gd91800
+07/22/2025 06:31:43 AM Trial Cash Interest +0.14 u82p7e3h64d0g
+07/21/2025 06:43:22 AM Trial Cash Interest +0.14 u82p5jyw67f33
+07/20/2025 11:37:45 PM CashBox Auto Save -7.46 at_2p509j7c001
+07/20/2025 07:43:25 AM CashBox Withdraw +7.46 t62p3s2s8fe00
+07/07/2025 08:50:06 PM Top up Airtime -129.00 132pgpu47f200
+07/07/2025 08:15:31 PM CashBox Auto Save -108.00 at_2ogo8h39901
