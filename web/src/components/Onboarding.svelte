@@ -126,7 +126,15 @@
   {:else}
     <form onsubmit={submit} class="space-y-5">
       <div class="rounded-lg border border-line bg-surface-2/40 px-3.5 py-3 text-[13px] leading-relaxed text-muted">
-        Kova disburses and collects on <b class="text-fg">your own Monnify account</b>, so funds and reconciliation stay with you. Find these in your Monnify dashboard under <span class="text-fg">Settings → API Keys &amp; Webhooks</span>. Your secret is encrypted at rest.
+        Kova disburses and collects on <b class="text-fg">your own Monnify account</b>, so funds and reconciliation stay with you. Your secret is encrypted at rest.
+        <div class="mt-2.5 border-t border-line pt-2.5">
+          Where to find these — log in to <a href="https://app.monnify.com" target="_blank" rel="noopener" class="text-violet underline underline-offset-2">app.monnify.com</a>:
+          <ul class="mt-1.5 space-y-1">
+            <li>• <b class="text-fg">API key</b> &amp; <b class="text-fg">Secret key</b> — Settings → API Keys &amp; Webhooks</li>
+            <li>• <b class="text-fg">Contract code</b> — Settings → API Keys &amp; Webhooks (or your contract details)</li>
+            <li>• <b class="text-fg">Wallet account</b> — Disbursement → Wallet (the 10-digit source account)</li>
+          </ul>
+        </div>
       </div>
 
       <div>

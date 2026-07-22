@@ -19,8 +19,8 @@
     --ink: #f6f6f7;
     --muted: #9a9aa4;
     --faint: #6b6b74;
-    --accent: #22c55e;
-    --accent-ink: #04140a;
+    --accent: #8b7cff;
+    --accent-ink: #ffffff;
     --display:
      'General Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
     --sans:
@@ -473,7 +473,7 @@
      <div class="badge"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg></div>
      <h1>Unavailable</h1>
      <p class="sub">${msg}</p>
-    </div>`;
+    </div>${upsell()}`;
    }
    function showErr(msg) {
     const e = document.getElementById('err');

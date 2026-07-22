@@ -19,8 +19,8 @@
     --ink: #f6f6f7;
     --muted: #9a9aa4;
     --faint: #6b6b74;
-    --accent: #22c55e;
-    --accent-ink: #04140a;
+    --accent: #8b7cff;
+    --accent-ink: #ffffff;
     --display:
      'General Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
     --sans:
@@ -682,12 +682,12 @@
       'This request link has expired. Please ask the lender to send you a new one.',
      );
 
-    const wantsOffer =
-     params.get('v') === 'offer' ||
-     ['scored', 'accepted', 'disbursed'].includes(state.status);
-    if (wantsOffer && state.status !== 'pending') return renderOffer();
-    if (state.hasIntake) return renderUpload();
-    renderIntake();
+    // One process per link: only collect intake/statements while the request is
+    // still awaiting them. Any other state shows a status message (no re-do).
+    if (state.status === 'pending') {
+     return state.hasIntake ? renderUpload() : renderIntake();
+    }
+    return renderOffer();
    }
 
    function brandName() {
@@ -962,6 +962,14 @@
 
    /* ---------- offer / accept ---------- */
    async function renderOffer() {
+    if (state.repaid) {
+     return message(
+      'check',
+      'Loan fully repaid',
+      `Your loan with ${esc(brandName())} is fully repaid — nothing more to do here. Thank you!`,
+      true,
+     );
+    }
     if (state.disbursed) {
      let extra = '';
      if (state.repaymentTotal) {
@@ -1114,7 +1122,7 @@
    }
 
    /* ---------- shared ---------- */
-   function message(kind, title, body, withUpsell) {
+   function message(kind, title, body, withUpsell = true) {
     const icon =
      kind === 'check'
       ? '<path d="M20 6 9 17l-5-5"/>'

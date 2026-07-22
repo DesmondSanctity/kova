@@ -242,6 +242,8 @@
   const bandColor = (b) => (b === 'A' ? 'text-accent' : b === 'B' ? 'text-violet' : 'text-amber-400');
 
   // ---- settings / branding ----
+  let settingsTab = $state('branding');
+  const settingsTabs = [['branding', 'Branding'], ['products', 'Loan products'], ['rules', 'Lending rules'], ['payments', 'Payments'], ['account', 'Account']];
   let settingsForm = $state({ orgName: '', brandName: '', brandColor: '#8b7cff', brandTextColor: '#ffffff', supportEmail: '', minScore: '', loanProducts: [] });
   let savingSettings = $state(false);
 
@@ -944,98 +946,140 @@
           <h1 class="text-[30px] font-light tracking-tight">Settings</h1>
           <p class="mt-1.5 text-[16px] text-muted">Your account, workspace, and link branding.</p>
 
-          <!-- Account -->
-          <div class="mt-8 rounded-2xl border border-line bg-surface p-6 lg:p-7">
-            <div class="text-[15px] font-medium text-fg">Account</div>
-            <div class="mt-4 grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
-              <div><div class="text-[13px] text-faint">Name</div><div class="mt-1 text-[16px] text-fg">{user?.name}</div></div>
-              <div><div class="text-[13px] text-faint">Email</div><div class="mt-1 text-[16px] lowercase text-fg">{user?.email}</div></div>
-              <div><div class="text-[13px] text-faint">Use case</div><div class="mt-1 text-[16px] capitalize text-fg">{workspace?.useCase || '—'}</div></div>
-              <div><div class="text-[13px] text-faint">Plan</div><div class="mt-1 text-[16px] capitalize text-fg">{workspace?.plan || '—'}</div></div>
-            </div>
+          <!-- tabs -->
+          <div class="mt-7 flex flex-wrap gap-1 border-b border-line">
+            {#each settingsTabs as [id, label] (id)}
+              <button onclick={() => (settingsTab = id)} class="relative -mb-px rounded-t-lg px-4 py-2.5 text-[14px] font-medium transition-colors {settingsTab === id ? 'border-b-2 border-violet text-fg' : 'text-muted hover:text-fg'}">
+                {label}{#if id === 'payments' && !workspace?.monnifyConnected}<span class="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-red-400 align-middle"></span>{/if}
+              </button>
+            {/each}
           </div>
 
-          <!-- Payments (Monnify) -->
-          <form onsubmit={saveMonnify} class="mt-5 rounded-2xl border border-line bg-surface p-6 lg:p-7">
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <div class="text-[15px] font-medium text-fg">Payments · Monnify</div>
-                <p class="mt-1 text-[13.5px] text-muted">Kova disburses and collects on your own Monnify account. Secrets are encrypted at rest.</p>
+          {#if settingsTab === 'account'}
+            <div class="mt-6 rounded-2xl border border-line bg-surface p-6 lg:p-7">
+              <div class="text-[15px] font-medium text-fg">Account</div>
+              <div class="mt-4 grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
+                <div><div class="text-[13px] text-faint">Name</div><div class="mt-1 text-[16px] text-fg">{user?.name}</div></div>
+                <div><div class="text-[13px] text-faint">Email</div><div class="mt-1 text-[16px] lowercase text-fg">{user?.email}</div></div>
+                <div><div class="text-[13px] text-faint">Use case</div><div class="mt-1 text-[16px] capitalize text-fg">{workspace?.useCase || '—'}</div></div>
+                <div><div class="text-[13px] text-faint">Plan</div><div class="mt-1 text-[16px] capitalize text-fg">{workspace?.plan || '—'}</div></div>
               </div>
-              {#if workspace?.monnifyConnected}
-                <span class="shrink-0 rounded-full bg-accent/15 px-3 py-1 text-[12.5px] font-medium text-accent">Connected</span>
-              {:else}
-                <span class="shrink-0 rounded-full bg-red-500/15 px-3 py-1 text-[12.5px] font-medium text-red-400">Not connected</span>
-              {/if}
             </div>
-            <div class="mt-5 grid gap-5 sm:grid-cols-2">
-              <label class="block">
-                <span class="mb-2 block text-[13.5px] font-medium text-muted">Environment</span>
-                <select bind:value={monForm.baseUrl} class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] text-fg outline-none focus:border-violet">
-                  <option value="https://sandbox.monnify.com">Sandbox</option>
-                  <option value="https://api.monnify.com">Live</option>
-                </select>
-              </label>
-              <label class="block">
-                <span class="mb-2 block text-[13.5px] font-medium text-muted">Contract code</span>
-                <input bind:value={monForm.contractCode} inputmode="numeric" placeholder="1234567890" class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] text-fg placeholder:text-faint outline-none focus:border-violet" />
-              </label>
-              <label class="block">
-                <span class="mb-2 block text-[13.5px] font-medium text-muted">API key</span>
-                <input bind:value={monForm.apiKey} placeholder={workspace?.monnifyConnected ? 're-enter to update' : 'MK_PROD_XXXXXXXX'} class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] text-fg placeholder:text-faint outline-none focus:border-violet" />
-              </label>
-              <label class="block">
-                <span class="mb-2 block text-[13.5px] font-medium text-muted">Secret key</span>
-                <input bind:value={monForm.secretKey} type="password" placeholder={workspace?.monnifyConnected ? 're-enter to update' : '••••••••••••'} class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] text-fg placeholder:text-faint outline-none focus:border-violet" />
-              </label>
-              <label class="block sm:col-span-2">
-                <span class="mb-2 block text-[13.5px] font-medium text-muted">Wallet account number</span>
-                <input bind:value={monForm.walletAccount} inputmode="numeric" maxlength="10" placeholder="0123456789 (10-digit source wallet)" class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] text-fg placeholder:text-faint outline-none focus:border-violet" />
-              </label>
-            </div>
-            <div class="mt-5">
-              <button type="submit" disabled={savingMonnify} class="rounded-lg bg-fg px-5 py-2.5 text-[15px] font-semibold text-bg transition-opacity hover:opacity-90 disabled:opacity-60">{savingMonnify ? 'Verifying with Monnify…' : 'Save Monnify credentials'}</button>
-            </div>
-          </form>
+            <button onclick={logout} class="mt-5 rounded-lg border border-line px-4 py-2.5 text-[15px] text-muted transition-colors hover:text-red-400">Sign out</button>
 
-          <form onsubmit={saveSettings} class="mt-5 grid items-start gap-5 lg:grid-cols-[1.6fr_1fr]">
-            <!-- left column -->
-            <div class="space-y-5">
-              <!-- branding -->
-              <div class="rounded-2xl border border-line bg-surface p-6 lg:p-7">
-                <div class="text-[15px] font-medium text-fg">Workspace &amp; branding</div>
-                <p class="mt-1 text-[13.5px] text-muted">Controls what borrowers see on your shareable link pages.</p>
-                <div class="mt-5 grid gap-5 sm:grid-cols-2">
-                  <label class="block">
-                    <span class="mb-2 block text-[13.5px] font-medium text-muted">Organisation name</span>
-                    <input bind:value={settingsForm.orgName} placeholder="Acme Credit" class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] text-fg placeholder:text-faint outline-none focus:border-violet" />
-                  </label>
-                  <label class="block">
-                    <span class="mb-2 block text-[13.5px] font-medium text-muted">Brand name on links</span>
-                    <input bind:value={settingsForm.brandName} placeholder="Defaults to organisation name" class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] text-fg placeholder:text-faint outline-none focus:border-violet" />
-                  </label>
-                  <label class="block">
-                    <span class="mb-2 block text-[13.5px] font-medium text-muted">Button &amp; accent colour</span>
-                    <div class="flex items-center gap-2.5 rounded-xl border border-line bg-bg/40 px-3 py-2.5">
-                      <input type="color" bind:value={settingsForm.brandColor} aria-label="Accent colour" class="h-9 w-9 shrink-0 cursor-pointer rounded-lg border border-line bg-transparent p-0.5" />
-                      <input bind:value={settingsForm.brandColor} placeholder="#8b7cff" class="w-full bg-transparent font-mono text-[14px] text-fg placeholder:text-faint outline-none" />
-                    </div>
-                  </label>
-                  <label class="block">
-                    <span class="mb-2 block text-[13.5px] font-medium text-muted">Button text colour</span>
-                    <div class="flex items-center gap-2.5 rounded-xl border border-line bg-bg/40 px-3 py-2.5">
-                      <input type="color" bind:value={settingsForm.brandTextColor} aria-label="Button text colour" class="h-9 w-9 shrink-0 cursor-pointer rounded-lg border border-line bg-transparent p-0.5" />
-                      <input bind:value={settingsForm.brandTextColor} placeholder="#ffffff" class="w-full bg-transparent font-mono text-[14px] text-fg placeholder:text-faint outline-none" />
-                    </div>
-                  </label>
-                  <label class="block sm:col-span-2">
-                    <span class="mb-2 block text-[13.5px] font-medium text-muted">Support email</span>
-                    <input bind:value={settingsForm.supportEmail} type="email" placeholder="support@acme.com" class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] lowercase text-fg placeholder:text-faint outline-none focus:border-violet" />
-                  </label>
+          {:else if settingsTab === 'payments'}
+            <form onsubmit={saveMonnify} class="mt-6 rounded-2xl border border-line bg-surface p-6 lg:p-7">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <div class="text-[15px] font-medium text-fg">Payments · Monnify</div>
+                  <p class="mt-1 text-[13.5px] text-muted">Kova disburses and collects on your own Monnify account. Secrets are encrypted at rest.</p>
+                </div>
+                {#if workspace?.monnifyConnected}
+                  <span class="shrink-0 rounded-full bg-accent/15 px-3 py-1 text-[12.5px] font-medium text-accent">Connected</span>
+                {:else}
+                  <span class="shrink-0 rounded-full bg-red-500/15 px-3 py-1 text-[12.5px] font-medium text-red-400">Not connected</span>
+                {/if}
+              </div>
+              <div class="mt-4 rounded-lg border border-line bg-bg/40 px-3.5 py-3 text-[13px] leading-relaxed text-muted">
+                Where to find these — log in to <a href="https://app.monnify.com" target="_blank" rel="noopener" class="text-violet underline underline-offset-2">app.monnify.com</a>:
+                <ul class="mt-1.5 space-y-1">
+                  <li>• <b class="text-fg">API key</b> &amp; <b class="text-fg">Secret key</b> — Settings → API Keys &amp; Webhooks</li>
+                  <li>• <b class="text-fg">Contract code</b> — Settings → API Keys &amp; Webhooks (or your contract details)</li>
+                  <li>• <b class="text-fg">Wallet account</b> — Disbursement → Wallet (the 10-digit source account)</li>
+                </ul>
+              </div>
+              <div class="mt-5 grid gap-5 sm:grid-cols-2">
+                <label class="block">
+                  <span class="mb-2 block text-[13.5px] font-medium text-muted">Environment</span>
+                  <select bind:value={monForm.baseUrl} class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] text-fg outline-none focus:border-violet">
+                    <option value="https://sandbox.monnify.com">Sandbox</option>
+                    <option value="https://api.monnify.com">Live</option>
+                  </select>
+                </label>
+                <label class="block">
+                  <span class="mb-2 block text-[13.5px] font-medium text-muted">Contract code</span>
+                  <input bind:value={monForm.contractCode} inputmode="numeric" placeholder="1234567890" class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] text-fg placeholder:text-faint outline-none focus:border-violet" />
+                </label>
+                <label class="block">
+                  <span class="mb-2 block text-[13.5px] font-medium text-muted">API key</span>
+                  <input bind:value={monForm.apiKey} placeholder={workspace?.monnifyConnected ? 're-enter to update' : 'MK_PROD_XXXXXXXX'} class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] text-fg placeholder:text-faint outline-none focus:border-violet" />
+                </label>
+                <label class="block">
+                  <span class="mb-2 block text-[13.5px] font-medium text-muted">Secret key</span>
+                  <input bind:value={monForm.secretKey} type="password" placeholder={workspace?.monnifyConnected ? 're-enter to update' : '••••••••••••'} class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] text-fg placeholder:text-faint outline-none focus:border-violet" />
+                </label>
+                <label class="block sm:col-span-2">
+                  <span class="mb-2 block text-[13.5px] font-medium text-muted">Wallet account number</span>
+                  <input bind:value={monForm.walletAccount} inputmode="numeric" maxlength="10" placeholder="0123456789 (10-digit source wallet)" class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] text-fg placeholder:text-faint outline-none focus:border-violet" />
+                </label>
+              </div>
+              <div class="mt-5">
+                <button type="submit" disabled={savingMonnify} class="rounded-lg bg-fg px-5 py-2.5 text-[15px] font-semibold text-bg transition-opacity hover:opacity-90 disabled:opacity-60">{savingMonnify ? 'Verifying with Monnify…' : 'Save Monnify credentials'}</button>
+              </div>
+            </form>
+
+          {:else if settingsTab === 'branding'}
+            <form onsubmit={saveSettings} class="mt-6 grid items-start gap-5 lg:grid-cols-[1.6fr_1fr]">
+              <div class="space-y-5">
+                <div class="rounded-2xl border border-line bg-surface p-6 lg:p-7">
+                  <div class="text-[15px] font-medium text-fg">Workspace &amp; branding</div>
+                  <p class="mt-1 text-[13.5px] text-muted">Controls what borrowers see on your shareable link pages.</p>
+                  <div class="mt-5 grid gap-5 sm:grid-cols-2">
+                    <label class="block">
+                      <span class="mb-2 block text-[13.5px] font-medium text-muted">Organisation name</span>
+                      <input bind:value={settingsForm.orgName} placeholder="Acme Credit" class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] text-fg placeholder:text-faint outline-none focus:border-violet" />
+                    </label>
+                    <label class="block">
+                      <span class="mb-2 block text-[13.5px] font-medium text-muted">Brand name on links</span>
+                      <input bind:value={settingsForm.brandName} placeholder="Defaults to organisation name" class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] text-fg placeholder:text-faint outline-none focus:border-violet" />
+                    </label>
+                    <label class="block">
+                      <span class="mb-2 block text-[13.5px] font-medium text-muted">Button &amp; accent colour</span>
+                      <div class="flex items-center gap-2.5 rounded-xl border border-line bg-bg/40 px-3 py-2.5">
+                        <input type="color" bind:value={settingsForm.brandColor} aria-label="Accent colour" class="h-9 w-9 shrink-0 cursor-pointer rounded-lg border border-line bg-transparent p-0.5" />
+                        <input bind:value={settingsForm.brandColor} placeholder="#8b7cff" class="w-full bg-transparent font-mono text-[14px] text-fg placeholder:text-faint outline-none" />
+                      </div>
+                    </label>
+                    <label class="block">
+                      <span class="mb-2 block text-[13.5px] font-medium text-muted">Button text colour</span>
+                      <div class="flex items-center gap-2.5 rounded-xl border border-line bg-bg/40 px-3 py-2.5">
+                        <input type="color" bind:value={settingsForm.brandTextColor} aria-label="Button text colour" class="h-9 w-9 shrink-0 cursor-pointer rounded-lg border border-line bg-transparent p-0.5" />
+                        <input bind:value={settingsForm.brandTextColor} placeholder="#ffffff" class="w-full bg-transparent font-mono text-[14px] text-fg placeholder:text-faint outline-none" />
+                      </div>
+                    </label>
+                    <label class="block sm:col-span-2">
+                      <span class="mb-2 block text-[13.5px] font-medium text-muted">Support email</span>
+                      <input bind:value={settingsForm.supportEmail} type="email" placeholder="support@acme.com" class="w-full rounded-xl border border-line bg-bg/40 px-4 py-3 text-[15px] lowercase text-fg placeholder:text-faint outline-none focus:border-violet" />
+                    </label>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <button type="submit" disabled={savingSettings} class="rounded-lg bg-fg px-5 py-2.5 text-[15px] font-semibold text-bg transition-opacity hover:opacity-90 disabled:opacity-60">{savingSettings ? 'Saving…' : 'Save changes'}</button>
+                  <button type="button" onclick={seedSettings} class="rounded-lg px-4 py-2.5 text-[15px] text-muted transition-colors hover:text-fg">Reset</button>
                 </div>
               </div>
 
-              <!-- loan products -->
+              <div class="lg:sticky lg:top-8">
+                <div class="rounded-2xl border border-line bg-surface p-5">
+                  <div class="mb-3 text-[13px] text-faint">Borrower link preview</div>
+                  <div class="overflow-hidden rounded-xl border border-line bg-bg/40">
+                    <div class="flex items-center gap-2.5 border-b border-line px-4 py-3 text-[14px] font-semibold text-fg">
+                      <span class="grid h-6 w-6 place-items-center rounded-md text-[12px] font-bold" style="background:{settingsForm.brandColor};color:{settingsForm.brandTextColor}">{(settingsForm.brandName || settingsForm.orgName || 'K').trim()[0] || 'K'}</span>
+                      {settingsForm.brandName || settingsForm.orgName || 'Your brand'}
+                    </div>
+                    <div class="px-4 py-5">
+                      <div class="text-[15px] font-medium leading-snug text-fg">{settingsForm.brandName || settingsForm.orgName || 'A lender'} requested your income check</div>
+                      <p class="mt-1.5 text-[13px] text-muted">Upload your statements — we only ever share your score.</p>
+                      <div class="mt-4 inline-flex rounded-lg px-4 py-2 text-[14px] font-semibold" style="background:{settingsForm.brandColor};color:{settingsForm.brandTextColor}">Upload statements</div>
+                    </div>
+                  </div>
+                  <p class="mt-3 text-[12px] leading-relaxed text-faint">The accent colour tints buttons, links and highlights; the text colour keeps them readable.</p>
+                </div>
+              </div>
+            </form>
+
+          {:else if settingsTab === 'products'}
+            <form onsubmit={saveSettings} class="mt-6 space-y-5">
               <div class="rounded-2xl border border-line bg-surface p-6 lg:p-7">
                 <div class="flex items-center justify-between gap-3">
                   <div>
@@ -1057,8 +1101,14 @@
                   {/each}
                 </div>
               </div>
+              <div class="flex items-center gap-3">
+                <button type="submit" disabled={savingSettings} class="rounded-lg bg-fg px-5 py-2.5 text-[15px] font-semibold text-bg transition-opacity hover:opacity-90 disabled:opacity-60">{savingSettings ? 'Saving…' : 'Save changes'}</button>
+                <button type="button" onclick={seedSettings} class="rounded-lg px-4 py-2.5 text-[15px] text-muted transition-colors hover:text-fg">Reset</button>
+              </div>
+            </form>
 
-              <!-- lending rules -->
+          {:else if settingsTab === 'rules'}
+            <form onsubmit={saveSettings} class="mt-6 space-y-5">
               <div class="rounded-2xl border border-line bg-surface p-6 lg:p-7">
                 <div class="text-[15px] font-medium text-fg">Lending rules</div>
                 <p class="mt-1 text-[13.5px] text-muted">Kova auto-declines any application scoring below this threshold. Leave blank to use the platform default of 40.</p>
@@ -1070,34 +1120,12 @@
                   </div>
                 </label>
               </div>
-
               <div class="flex items-center gap-3">
                 <button type="submit" disabled={savingSettings} class="rounded-lg bg-fg px-5 py-2.5 text-[15px] font-semibold text-bg transition-opacity hover:opacity-90 disabled:opacity-60">{savingSettings ? 'Saving…' : 'Save changes'}</button>
                 <button type="button" onclick={seedSettings} class="rounded-lg px-4 py-2.5 text-[15px] text-muted transition-colors hover:text-fg">Reset</button>
               </div>
-            </div>
-
-            <!-- right column: live preview -->
-            <div class="lg:sticky lg:top-8">
-              <div class="rounded-2xl border border-line bg-surface p-5">
-                <div class="mb-3 text-[13px] text-faint">Borrower link preview</div>
-                <div class="overflow-hidden rounded-xl border border-line bg-bg/40">
-                  <div class="flex items-center gap-2.5 border-b border-line px-4 py-3 text-[14px] font-semibold text-fg">
-                    <span class="grid h-6 w-6 place-items-center rounded-md text-[12px] font-bold" style="background:{settingsForm.brandColor};color:{settingsForm.brandTextColor}">{(settingsForm.brandName || settingsForm.orgName || 'K').trim()[0] || 'K'}</span>
-                    {settingsForm.brandName || settingsForm.orgName || 'Your brand'}
-                  </div>
-                  <div class="px-4 py-5">
-                    <div class="text-[15px] font-medium leading-snug text-fg">{settingsForm.brandName || settingsForm.orgName || 'A lender'} requested your income check</div>
-                    <p class="mt-1.5 text-[13px] text-muted">Upload your statements — we only ever share your score.</p>
-                    <div class="mt-4 inline-flex rounded-lg px-4 py-2 text-[14px] font-semibold" style="background:{settingsForm.brandColor};color:{settingsForm.brandTextColor}">Upload statements</div>
-                  </div>
-                </div>
-                <p class="mt-3 text-[12px] leading-relaxed text-faint">The accent colour tints buttons, links and highlights; the text colour keeps them readable.</p>
-              </div>
-            </div>
-          </form>
-
-          <button onclick={logout} class="mt-6 rounded-lg border border-line px-4 py-2.5 text-[15px] text-muted transition-colors hover:text-red-400">Sign out</button>
+            </form>
+          {/if}
         {/if}
       </div>
     </main>
