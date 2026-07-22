@@ -1388,7 +1388,7 @@
               <div><div class="text-[13px] text-faint">Recommended limit</div><div class="text-[17px] font-medium text-fg">{nairaN(s.limitRecommendation)}</div></div>
               <div><div class="text-[13px] text-faint">Avg monthly inflow</div><div class="text-[17px] font-medium text-fg">{nairaN(f.avgMonthlyInflow)}</div></div>
               <div><div class="text-[13px] text-faint">Total inflow</div><div class="text-[17px] font-medium text-fg">{nairaN(f.totalInflow)}</div></div>
-              <div><div class="text-[13px] text-faint">Months covered</div><div class="text-[17px] font-medium text-fg">{f.monthsCovered ?? '—'}</div></div>
+              <div><div class="text-[13px] text-faint">Months covered</div><div class="text-[17px] font-medium text-fg">{f.monthsCovered != null ? Math.round(f.monthsCovered) : '—'}</div></div>
               <div><div class="text-[13px] text-faint">Transactions</div><div class="text-[17px] font-medium text-fg">{f.transactionCount ?? files.reduce((a, x) => a + (x.transactions || 0), 0)}</div></div>
             </div>
           </div>

@@ -651,11 +651,14 @@ const defaultMinScore = 40
 // decide turns a score + requested amount + lender cap into an offer. Money is
 // integer kobo; the score's recommended limit is naira and converted to kobo.
 // minScore is the lender's configured auto-decline floor (0 => platform default).
+// Band E and sub-threshold scores are hard-declined; band D is allowed but is
+// naturally capped by its (low) recommended limit, so a small request that fits
+// within that limit can still be approved rather than declined outright.
 func decide(score int, band string, recommendedNaira float64, requestedKobo, maxKobo int64, minScore int) (string, int64) {
 	if minScore <= 0 {
 		minScore = defaultMinScore
 	}
-	if band == "D" || band == "E" || score < minScore {
+	if band == "E" || score < minScore {
 		return "declined", 0
 	}
 	capKobo := int64(recommendedNaira * 100)
