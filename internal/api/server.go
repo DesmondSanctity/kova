@@ -203,11 +203,7 @@ func (s *Server) handleScore(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, rep)
 }
 
-// handleCreateRequest creates a shareable borrower link, owned by the caller's
-// workspace when an API key is presented.
-// handleMonnifyWebhook receives disbursement settlement events from Monnify.
-// It verifies the HMAC-SHA512 signature and updates the final payout status;
-// FAILED/REVERSED reverts the loan to 'accepted' so it can be retried.
+// handleMonnifyWebhook verifies the Monnify signature and updates payout/repayment status.
 func (s *Server) handleMonnifyWebhook(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
@@ -405,9 +401,7 @@ func (s *Server) handleRequestAccept(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "a valid 11-digit BVN is required")
 		return
 	}
-	// Try to verify the payout account name. On sandbox this often can't resolve
-	// test accounts, so we don't block: we record the account + BVN and mark it
-	// unverified. Live Monnify credentials make this a hard gate.
+	// Verify the payout account name if we can; don't block when it won't resolve (sandbox).
 	accountName := ""
 	verified := false
 	if mon, err := s.monnifyFor(r.Context(), req.WorkspaceID); err == nil {
@@ -475,7 +469,10 @@ func (s *Server) notifyLenderScored(r *http.Request, req *store.Request, decisio
 	case "counter":
 		verdict = "Kova suggests a counter-offer of <b style=\"color:#0f172a\">₦" + strconv.FormatInt(offer/100, 10) + "</b>."
 	}
-	reviewURL := origin(r) + "/dashboard"
+	reviewURL := s.appURL("/dashboard")
+	if reviewURL == "/dashboard" {
+		reviewURL = origin(r) + "/dashboard"
+	}
 	body := `<h1 style="margin:0 0 12px;font-size:20px;font-weight:600;color:#0f172a">A statement check is ready to review</h1>
 		<p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:#475569">` + html.EscapeString(who) + ` finished uploading their bank statements.</p>
 		<div style="margin:0 0 18px;padding:14px 16px;background:#f4f4f5;border-radius:12px;font-size:14px;color:#334155">Score <b style="color:#0f172a">` + strconv.Itoa(score) + `</b> · Band <b style="color:#0f172a">` + html.EscapeString(band) + `</b><br>` + verdict + `</div>` +
@@ -510,10 +507,14 @@ func (s *Server) notifyLenderAccepted(r *http.Request, req *store.Request, accou
 	naira := fmt.Sprintf("₦%d", req.OfferAmount/100)
 	brand := brandName(ws)
 	subject := brand + ": offer accepted — ready to disburse " + naira
+	dashURL := s.appURL("/dashboard")
+	if dashURL == "/dashboard" {
+		dashURL = origin(r) + "/dashboard"
+	}
 	body := `<h1 style="margin:0 0 12px;font-size:20px;font-weight:600;color:#0f172a">A borrower accepted their offer</h1>
 		<p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:#475569">` + html.EscapeString(who) + ` accepted <b style="color:#0f172a">` + naira + `</b> and is ready to be paid.</p>
 		<div style="margin:0 0 18px;padding:14px 16px;background:#f4f4f5;border-radius:12px;font-size:14px;color:#334155">Payout account: <b style="color:#0f172a">` + html.EscapeString(name) + `</b></div>` +
-		emailButton(origin(r)+"/dashboard", "Review and disburse")
+		emailButton(dashURL, "Review and disburse")
 	msg := emailLayout(brand, body)
 	if err := s.mailer.Send(r.Context(), to, subject, msg); err != nil {
 		log.Printf("lender accept notice to %s: %v", to, err)
@@ -551,9 +552,7 @@ func brandName(ws *store.Workspace) string {
 	return "Kova"
 }
 
-// finalizeRepayment fires the lender notification and borrower receipt once a
-// loan transitions to repaid. Safe to call from every repayment path — it only
-// runs after the store confirmed the repaid transition, so it never duplicates.
+// finalizeRepayment emails the lender notice + borrower receipt after a repaid transition.
 func (s *Server) finalizeRepayment(ctx context.Context, reqID string) {
 	if s.mailer == nil {
 		return
@@ -599,9 +598,7 @@ func (s *Server) finalizeRepayment(ctx context.Context, reqID string) {
 	}
 }
 
-// StartRepaymentScheduler runs a background loop that emails borrowers a
-// repayment link once their due date has passed (hourly check). The lender can
-// also trigger this manually from the dashboard.
+// StartRepaymentScheduler emails borrowers a repayment link once due (hourly check).
 func (s *Server) StartRepaymentScheduler() {
 	if s.mailer == nil || s.store == nil {
 		return
@@ -648,12 +645,8 @@ func requestExpired(req *store.Request) bool {
 // workspace has not configured its own.
 const defaultMinScore = 40
 
-// decide turns a score + requested amount + lender cap into an offer. Money is
-// integer kobo; the score's recommended limit is naira and converted to kobo.
-// minScore is the lender's configured auto-decline floor (0 => platform default).
-// Band E and sub-threshold scores are hard-declined; band D is allowed but is
-// naturally capped by its (low) recommended limit, so a small request that fits
-// within that limit can still be approved rather than declined outright.
+// decide turns score + requested amount + caps into approve/counter/decline (kobo).
+// Band E and sub-threshold scores are declined; band D is capped by its recommended limit.
 func decide(score int, band string, recommendedNaira float64, requestedKobo, maxKobo int64, minScore int) (string, int64) {
 	if minScore <= 0 {
 		minScore = defaultMinScore
@@ -678,11 +671,7 @@ func decide(score int, band string, recommendedNaira float64, requestedKobo, max
 	return "counter", offer
 }
 
-// recommendTenor derives a bullet-loan repayment window (in days) from the
-// borrower's cashflow, used only when neither the lender product nor the
-// borrower set one. A loan that is large relative to monthly income gets a
-// longer window (assuming a comfortable monthly set-aside), rounded to whole
-// months and clamped to 14..90 days.
+// recommendTenor derives a repayment window (14..90 days) from cashflow when none is set.
 func recommendTenor(avgMonthlyInflowNaira float64, offerKobo int64) int {
 	if avgMonthlyInflowNaira <= 0 || offerKobo <= 0 {
 		return 30
@@ -767,7 +756,10 @@ func (s *Server) emailBorrowerResult(r *http.Request, req *store.Request, decisi
 			}
 		}
 	}
-	acceptURL := origin(r) + "/r/" + req.ID + "?v=offer"
+	acceptURL := s.appURL("/r/" + req.ID + "?v=offer")
+	if acceptURL == "/r/"+req.ID+"?v=offer" {
+		acceptURL = origin(r) + "/r/" + req.ID + "?v=offer"
+	}
 	subject, html := resultEmail(brand, req.BorrowerName, decision, offer, req.InterestRate, req.TenorDays, acceptURL, "")
 	if err := s.mailer.Send(r.Context(), req.BorrowerEmail, subject, html); err != nil {
 		log.Printf("borrower result email to %s: %v", req.BorrowerEmail, err)
@@ -918,10 +910,7 @@ func (s *Server) appURL(path string) string {
 	return s.baseURL + path
 }
 
-// oauthBase returns the canonical external origin used for OAuth redirect URIs:
-// the configured app base URL (KOVA_BASE_URL) when set, else the request origin.
-// This keeps the GitHub redirect_uri stable regardless of which host (backend or
-// the proxying frontend) served the request.
+// oauthBase returns the external origin for OAuth redirect URIs: KOVA_BASE_URL if set, else the request origin.
 func (s *Server) oauthBase(r *http.Request) string {
 	if s.baseURL != "" {
 		return strings.TrimRight(s.baseURL, "/")

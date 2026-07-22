@@ -83,10 +83,7 @@ func keyAuthFrom(ctx context.Context) (store.KeyAuth, bool) {
 	return a, ok
 }
 
-// authorizeKey validates the request's API key against workspace keys (DB) and
-// env keys, enforcing per-key domain/IP allowlists. Access is never open: every
-// protected endpoint requires a valid key (or, for the link flow, a valid
-// request ID which is checked elsewhere).
+// authorizeKey validates the request's API key (DB + env keys) and enforces per-key domain/IP allowlists.
 func (s *Server) authorizeKey(r *http.Request, sc scope) (store.KeyAuth, bool) {
 	key := apiKey(r)
 	if key == "" {

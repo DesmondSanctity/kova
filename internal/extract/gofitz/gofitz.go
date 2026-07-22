@@ -1,7 +1,5 @@
 // Package gofitz implements extract.Extractor using go-fitz (MuPDF bindings).
-// It produces clean, row-order text from digital statement PDFs. Isolated in
-// its own package so pure-logic packages (parse, features, score) and their
-// tests never depend on the native library.
+// Isolated so pure-logic packages and tests never depend on the native library.
 package gofitz
 
 import (

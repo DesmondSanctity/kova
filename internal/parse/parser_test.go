@@ -103,9 +103,7 @@ func TestOPaySelfTransferIsInternal(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	// A plain transfer from the holder's own name (their Access Bank account) is
-	// an internal move and must be netted out. A loan-app transfer that happens
-	// to carry the holder's name (e.g. OKash) is NOT internal — it stays a loan.
+	// A transfer from the holder's own name is internal and netted out; a loan-app transfer carrying their name is not.
 	var selfFound bool
 	for _, tx := range st.Transactions {
 		if strings.Contains(tx.Description, "Access Bank") && sameName(tx.Counterparty, st.AccountName) {

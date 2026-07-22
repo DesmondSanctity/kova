@@ -40,9 +40,7 @@ func Detect(doc *extract.Document) Parser {
 	return nil
 }
 
-// Parse detects the source bank and parses the document into a Statement. A
-// bank-specific parser is preferred (fast, exact); otherwise the generic
-// balance-chain parser handles arbitrary layouts.
+// Parse detects the source bank and parses the document; falls back to the generic balance-chain parser.
 func Parse(doc *extract.Document) (*model.Statement, error) {
 	if p := Detect(doc); p != nil {
 		if st, err := p.Parse(doc); err == nil && len(st.Transactions) > 0 {

@@ -1,6 +1,4 @@
-// Package store is the Postgres-backed persistence layer: users, sessions,
-// workspaces, API keys (with allowlists), password resets, lender links, and
-// usage tracking.
+// Package store is the Postgres-backed persistence layer (users, sessions, workspaces, API keys, links, usage).
 package store
 
 import (

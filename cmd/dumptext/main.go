@@ -1,5 +1,4 @@
-// Command dumptext extracts a PDF to plain text via the go-fitz extractor and
-// writes it to a file. Used to capture real fixtures for cgo-free parser tests.
+// Command dumptext extracts a PDF to plain text (go-fitz) for capturing parser-test fixtures.
 //
 //	go run ./cmd/dumptext <path-to-pdf> <out.txt>
 package main

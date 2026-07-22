@@ -1,9 +1,6 @@
-// Generic, bank-agnostic statement parser. Rather than a template per bank, it
-// leans on two invariants present in virtually every Nigerian statement: each
-// transaction row starts with a date, and every row carries a running balance.
-// Amount and direction are derived from the balance delta between rows, so the
-// column order and labels don't matter — and it self-corrects mildly scrambled
-// text extraction. Used as a fallback when no specific parser matches.
+// Generic, bank-agnostic statement parser: every row starts with a date and carries a running
+// balance, so amount and direction come from the balance delta regardless of column order.
+// Used as a fallback when no specific parser matches.
 package parse
 
 import (
@@ -61,9 +58,7 @@ var (
 	genYearRest    = regexp.MustCompile(`^\s*(\d{4})\b(.*)$`)
 )
 
-// mergeWrappedDates rejoins a date split across two lines (e.g. "02-Jan-" on one
-// line and "2025 S552… 50,000.00 …" on the next — as ALAT/Wema statements emit),
-// normalizing it to "02 Jan 2025 …" so the row anchor can match.
+// mergeWrappedDates rejoins a date split across two lines (e.g. "02-Jan-" then "2025 …") into "02 Jan 2025 …".
 func mergeWrappedDates(lines []string) []string {
 	out := make([]string, 0, len(lines))
 	for i := 0; i < len(lines); i++ {
@@ -184,9 +179,7 @@ func parseGeneric(doc *extract.Document) (*model.Statement, error) {
 		}
 	}
 
-	// Prefer the printed (chronological) order; only rethread via the balance
-	// chain when the printed order doesn't reconcile with the balance column
-	// (i.e. rows were emitted out of sequence by text extraction).
+	// Prefer printed order; only rethread via the balance chain when it doesn't reconcile.
 	if !reconciles(rows, prev) {
 		rows = chainOrder(rows, prev)
 	}
@@ -256,10 +249,8 @@ func reconciles(rows []genRow, seed float64) bool {
 	return float64(match)/float64(len(rows)) >= 0.9
 }
 
-// chainOrder reorders rows by walking the running balance: at each step it picks
-// the unused row whose printed amount equals the change from the current
-// balance. Falls back to timestamp order when no amount matches (e.g. a missing
-// printed amount), so it degrades gracefully.
+// chainOrder reorders rows by walking the running balance, picking the row whose amount matches each delta.
+// Falls back to timestamp order when no amount matches.
 func chainOrder(rows []genRow, seed float64) []genRow {
 	n := len(rows)
 	used := make([]bool, n)

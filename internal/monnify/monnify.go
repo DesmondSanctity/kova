@@ -1,6 +1,5 @@
-// Package monnify is a small client for the Monnify sandbox APIs: OAuth token,
-// account name verification (identity anchor), and disbursement (acting on a
-// score). Credentials come from the environment; sandbox defaults are provided.
+// Package monnify is a small client for the Monnify APIs: auth, account name
+// verification, disbursement (with OTP), and collections. Credentials are per-lender.
 package monnify
 
 import (
@@ -21,8 +20,8 @@ import (
 	"time"
 )
 
-// flexFloat unmarshals a JSON value that may be a number or a quoted string
-// (Monnify returns some amount fields as strings, e.g. "amountPaid": "10000.00").
+// flexFloat unmarshals a JSON number or a quoted numeric string (Monnify returns
+// some amounts as strings, e.g. "amountPaid": "10000.00").
 type flexFloat float64
 
 func (f *flexFloat) UnmarshalJSON(b []byte) error {

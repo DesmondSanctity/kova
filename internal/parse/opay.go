@@ -27,9 +27,7 @@ var (
 	// A transaction row always begins with a full timestamp at the line start.
 	opayAnchor = regexp.MustCompile(`(?m)^\d{2} [A-Z][a-z]{2} \d{4} \d{2}:\d{2}:\d{2}`)
 
-	// transTime valueDate description debit credit balance channel reference.
-	// Exactly one of debit/credit is "--". The amount triple is anchored after
-	// a non-greedy description.
+	// transTime valueDate description debit credit balance channel reference (exactly one of debit/credit is "--").
 	opayRecord = regexp.MustCompile(`^(\d{2} [A-Z][a-z]{2} \d{4} \d{2}:\d{2}:\d{2})\s+(\d{2} [A-Z][a-z]{2} \d{4})\s+(.*?)\s+(--|[\d,]+\.\d{2})\s+(--|[\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+([A-Za-z]+)\s+(.*)$`)
 
 	opayCounterparty = regexp.MustCompile(`(?i)transfer (?:to|from)\s+(.+?)(?:\s*\||$)`)

@@ -1,7 +1,5 @@
-// PalmPay wallet statement parser. Unlike OPay, PalmPay statements have no
-// running-balance column — they use signed "Money In" / "Money Out" columns —
-// so direction and amount come straight from the signed value, not a balance
-// delta. Columns: Transaction Date | Detail | Money In | Money Out | Txn ID.
+// PalmPay wallet statement parser: signed "Money In"/"Money Out" columns (no running balance).
+// Columns: Transaction Date | Detail | Money In | Money Out | Txn ID.
 package parse
 
 import (

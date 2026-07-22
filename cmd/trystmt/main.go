@@ -1,6 +1,4 @@
-// Temporary: extract a statement PDF, parse it, run the pipeline — with timing
-// and an accuracy check against the statement's own stated summary totals.
-// Used to benchmark parse time + correctness on large statements.
+// Temporary CLI: extract + parse + run the pipeline with timing and an accuracy check against stated totals.
 package main
 
 import (

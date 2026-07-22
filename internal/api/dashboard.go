@@ -442,11 +442,8 @@ func (s *Server) handleUpdateWorkspace(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, updated)
 }
 
-// resolveWorkspaceID authenticates a lender action via EITHER a dashboard session
-// OR an API key, and returns the acting workspace id. It never lets one tenant act
-// on another: sessions resolve to the user's own workspace, and API keys resolve to
-// the key's own workspace. needSecret requires a secret-scoped key (sessions always
-// qualify, since they are the workspace owner); publishable keys are rejected.
+// resolveWorkspaceID authenticates a lender action via session or API key and returns the acting workspace id.
+// needSecret rejects publishable keys; sessions always qualify as the workspace owner.
 func (s *Server) resolveWorkspaceID(w http.ResponseWriter, r *http.Request, needSecret bool) (string, bool) {
 	// 1. Dashboard session — owner of their workspace.
 	if u, ok := s.currentUser(r); ok {
@@ -629,9 +626,7 @@ func (s *Server) handleDisburseLink(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusConflict, "already disbursed")
 		return
 	}
-	// If a payout is already awaiting OTP authorization and hasn't expired, reuse
-	// it — surface the OTP step again rather than creating a duplicate transfer.
-	// The still-valid emailed code (or "Resend code") authorizes this same one.
+	// Reuse a still-valid pending OTP payout instead of creating a duplicate transfer.
 	if req.DisbursementStatus == "PENDING_AUTHORIZATION" && req.DisbursementRef != "" && !disbursementRefExpired(req.DisbursementRef) {
 		writeJSON(w, http.StatusOK, map[string]any{"status": "otp_required", "reference": req.DisbursementRef, "pending": true})
 		return
@@ -641,8 +636,7 @@ func (s *Server) handleDisburseLink(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusServiceUnavailable, "disbursement wallet not set — add your 10-digit Monnify wallet account in Settings → Payments")
 		return
 	}
-	// Unique reference per attempt so an expired/failed payout can be retried
-	// (Monnify rejects a reused reference).
+	// Unique reference per attempt so a failed/expired payout can be retried (Monnify rejects reused refs).
 	ref := "kova_" + req.ID + "_" + strconv.FormatInt(time.Now().Unix(), 10)
 	narration := "Kova loan disbursement"
 	name := req.AccountName
@@ -657,9 +651,7 @@ func (s *Server) handleDisburseLink(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadGateway, "disbursement failed: "+err.Error())
 		return
 	}
-	// MFA is on by default on Monnify accounts: the transfer sits in
-	// PENDING_AUTHORIZATION until an emailed OTP is submitted. Only finalize once
-	// the money has actually moved (SUCCESS/COMPLETED).
+	// MFA is on by default: the transfer sits in PENDING_AUTHORIZATION until an OTP is submitted; only finalize on SUCCESS/COMPLETED.
 	switch d.Status {
 	case "SUCCESS", "COMPLETED":
 		s.finalizeDisbursement(r.Context(), req, d.Reference, wsID)
@@ -800,9 +792,7 @@ func (s *Server) handleRepayLink(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "repaid"})
 }
 
-// handleVerifyRepayment confirms a borrower's repayment with Monnify (server-side
-// Verify Transaction API) and marks the loan repaid if paid. This is the reliable
-// path — it works whether or not the borrower's browser redirected back.
+// handleVerifyRepayment confirms a repayment server-side (Verify Transaction) and marks the loan repaid if paid.
 func (s *Server) handleVerifyRepayment(w http.ResponseWriter, r *http.Request) {
 	wsID, ok := s.resolveWorkspaceID(w, r, true)
 	if !ok {
@@ -978,9 +968,7 @@ func receiptEmail(brand, name string, amountKobo int64, repaidAt *time.Time) (st
 	return bn + ": payment received — receipt for " + naira, emailLayout(brand, body)
 }
 
-// resultEmail builds the borrower notification for a decision. For approvals it
-// frames the amount as a score-based estimate (the lender has final say); for
-// declines it optionally includes the lender's reason.
+// resultEmail builds the borrower decision notification (estimate for approvals, optional reason for declines).
 func resultEmail(brand, name, decision string, offer int64, rate float64, tenorDays int, acceptURL, reason string) (string, string) {
 	naira := func(k int64) string { return "₦" + strconv.FormatInt(k/100, 10) }
 	greeting := "Hi"
